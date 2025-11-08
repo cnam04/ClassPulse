@@ -1,0 +1,63 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Teacher — Call a Vote</title>
+  <style>
+    body { font-family: system-ui, Arial; margin: 40px auto; max-width: 720px; }
+    .row { display: flex; gap: 12px; align-items: center; }
+    button { padding: 10px 14px; border-radius: 8px; border: 1px solid #111; background: #111; color: #fff; }
+    .pill { display:inline-block; padding: 6px 10px; border: 1px solid #ddd; border-radius: 999px; }
+    .counts { margin-top: 16px; }
+  </style>
+</head>
+<body>
+  <h1>Session {{ code }}</h1>
+  <div class="row">
+    <form id="start" onsubmit="return false;">
+      <button type="submit">Call 60-second Vote</button>
+    </form>
+    <div id="timer" class="pill">window: closed</div>
+  </div>
+
+  <div class="counts">
+    <p>Participants: <strong id="pcount">0</strong></p>
+    <p>
+      Not Confused: <strong id="nc">0</strong> &nbsp; | &nbsp;
+      So-so: <strong id="ss">0</strong> &nbsp; | &nbsp;
+      Confused: <strong id="cf">0</strong>
+    </p>
+  </div>
+
+  <script>
+    const code = "{{ code }}";
+    document.getElementById('start').addEventListener('submit', async () => {
+      await fetch(`/api/session/${code}/start_window`, {method: 'POST'});
+      tick(); // force refresh
+    });
+
+    const els = {
+      timer: document.getElementById('timer'),
+      pcount: document.getElementById('pcount'),
+      nc: document.getElementById('nc'),
+      ss: document.getElementById('ss'),
+      cf: document.getElementById('cf'),
+    };
+
+    async function tick(){
+      const res = await fetch(`/api/session/${code}/stats`);
+      if(!res.ok) return;
+      const d = await res.json();
+      els.pcount.textContent = d.participants ?? 0;
+      els.nc.textContent = d.not_confused ?? 0;
+      els.ss.textContent = d.soso ?? 0;
+      els.cf.textContent = d.confused ?? 0;
+      const t = d.window_active ? `window: ${d.window_seconds_remaining}s left` : 'window: closed';
+      els.timer.textContent = t;
+    }
+
+    setInterval(tick, 1000);
+    tick();
+  </script>
+</body>
+</html>

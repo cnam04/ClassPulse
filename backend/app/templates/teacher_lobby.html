@@ -1,0 +1,43 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Teacher Lobby</title>
+  <style>
+    body { font-family: system-ui, Arial; margin: 40px auto; max-width: 720px; }
+    .code { font-size: 36px; font-weight: 700; letter-spacing: 2px; }
+    .meta { color: #555; margin-top: 8px; }
+    form { display: inline-block; margin-top: 16px; }
+    button { padding: 10px 14px; border-radius: 8px; border: 1px solid #111; background: #111; color: #fff; }
+    .warn { color: #a00; font-weight: 600; }
+  </style>
+</head>
+<body>
+  <h1>Teacher Lobby</h1>
+  <p>Share this code with students:</p>
+  <div class="code">{{ code }}</div>
+  <p class="meta">Participants joined: <strong id="pcount">{{ participants }}</strong></p>
+  {% if locked %}
+    <p class="warn">Session is locked — no new students can join.</p>
+    <p><a href="/teacher/{{ code }}/vote">Go to vote page →</a></p>
+  {% else %}
+    <form method="post" action="/teacher/{{ code }}/lock">
+      <button type="submit">Start Session (Lock Joins)</button>
+    </form>
+  {% endif %}
+
+  <script>
+    // keep participant count fresh while lobby is open
+    const code = "{{ code }}";
+    const p = document.getElementById('pcount');
+    const refresh = async () => {
+      const res = await fetch(`/api/session/${code}/stats`);
+      if (!res.ok) return;
+      const data = await res.json();
+      if (p) p.textContent = data.participants ?? 0;
+    };
+    setInterval(refresh, 3000);
+    refresh();
+  </script>
+</body>
+</html>

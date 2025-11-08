@@ -1,0 +1,25 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Join Session</title>
+  <style>
+    body { font-family: system-ui, Arial; display:grid; place-items:center; min-height:100vh; }
+    .card { padding: 24px; border: 1px solid #ddd; border-radius: 12px; width: 360px; }
+    input, button { width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid #ccc; margin-top: 8px; }
+    .err { color: #a00; margin-top: 8px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Join a Session</h1>
+    <form method="post" action="/student/join">
+      <input name="code" placeholder="Enter 6-digit code" required />
+      <button type="submit">Join</button>
+    </form>
+    {% if error %}
+      <div class="err">{{ error }}</div>
+    {% endif %}
+  </div>
+</body>
+</html>
