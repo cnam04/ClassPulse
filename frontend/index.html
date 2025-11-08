@@ -161,17 +161,17 @@
         }
 
         function joinSession() {
-    const code = document.getElementById('sessionCode').value;
-    const errorMsg = document.getElementById('errorMessage');
-    
-    if (code.trim() === '') {
-        errorMsg.style.display = 'block';
-        return;
-    }
-    
-    // Since no backend, all codes are invalid for now
-    errorMsg.style.display = 'block';
-}
+            const code = document.getElementById('sessionCode').value;
+            const errorMsg = document.getElementById('errorMessage');
+            
+            if (code.trim() === '') {
+                errorMsg.style.display = 'block';
+                return;
+            }
+            
+            // Since no backend, all codes are invalid for now
+            errorMsg.style.display = 'block';
+        }
 
         function generateCode() {
     console.log('Generate code clicked');

@@ -1,4 +1,4 @@
-from flask import Flask, render_template,url_for
+from flask import Flask, render_template,url_for, redirect
 from string import ascii_uppercase
 from random import choice
 from threading import Lock
@@ -16,7 +16,7 @@ def gen_code():
     letters = ascii_uppercase
     return ''.join(choice(letters) for i in range(8))
 
-def empty_vote_counts():
+def empty_confusion_counts():
     return {"not_confused" : 0, "confused" : 0, "so-so": 0}
 
 def create_session():
@@ -27,7 +27,7 @@ def create_session():
         sessions[code] = {
             "locked": False,
             "participants":0,
-            "votes" : empty_vote_counts(),
+            "confusion_vals" : empty_confusion_counts(),
             "window_active": False,
             "window_expires_at" : 0.0
         }
@@ -47,11 +47,32 @@ def index():
 @app.post("/teacher/start")
 def teacher_start():
     code = create_session()
-    return(
-        {"code":code, "redirect": url_for("teacher_lobby", code=code)},
-        201, # this is the "created" code
-        {"Location": url_for("teacher_lobby", code=code)}
-    )
+    return redirect(url_for("teacher_lobby", code=code))
+
+@app.post("/teacher/<code>/lock")
+def teacher_lock(code):
+    s = get_session(code)
+    if not s: return ("Session not found", 404)
+    with lock:
+        s["locked"]=True
+    return redirect(url_for("teacher_understanding_check", code=code))
+    
+
+@app.get("/teacher/<code>")
+def teacher_lobby(code):
+    s = get_session(code)
+    if not s: return ("Session not found", 404)
+    return render_template("teacher_lobby.html", code=code, 
+                           participants=s["participants"], 
+                           locked = s["locked"])
+
+@app.post("/teacher/<code>/check")
+def call_understanding_check(code):
+    s= get_session(code)
+    if not s: return ("Session not found", 404)
+    return render_template("teacher_understanding_check.html", code=code)
+
+
 
 if __name__ == '__main__':
     app.run(debug=True)
