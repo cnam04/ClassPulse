@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Session</title>
+    <style>
+        p { font-family: "Times new Roman", serif; }
+        h1{ font-family: Verdana, sans-serif; }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #0f1e3d;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        .container {
+            text-align: center;
+            width: 100%;
+            max-width: 800px;
+            padding: 20px;
+        }
+
+        .screen {
+            display: none;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        h1 {
+            font-size: 4rem;
+            font-style: italic;
+            margin-bottom: 3rem;
+            font-weight: 300;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 2rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        button {
+            background: #1e90ff;
+            color: white;
+            border: none;
+            padding: 2rem 4rem;
+            font-size: 2rem;
+            border-radius: 1rem;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s;
+            min-width: 250px;
+        }
+
+        button:hover {
+            background: #4da6ff;
+            transform: translateY(-2px);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .form-group {
+            margin-top: 2rem;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .form-group input {
+            width: 100%;
+            max-width: 400px;
+            padding: 1rem;
+            font-size: 1.5rem;
+            border: 2px solid #1e90ff;
+            border-radius: 0.5rem;
+            background: #0a1628;
+            color: white;
+            text-align: center;
+        }
+
+        .form-group input::placeholder {
+            color: #6b7280;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #4da6ff;
+        }
+
+        .submit-btn {
+            margin-top: 2rem;
+            padding: 1.5rem 3rem;
+            font-size: 1.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Initial Choice Screen -->
+        <div id="choiceScreen" class="screen active">
+            <p style="font-size: 1.8rem; margin-bottom: 2rem; font-weight: 300;">Hi! Welcome to <em>classPulse!</em></p>
+           <h1> <p> Are you a </p></h1>
+            <div class="button-group">
+                <button onclick="showStudentScreen()">Student
+                    <h5>join session</h5>
+                </button>
+                <button onclick="showTeacherScreen()">Teacher
+                    <h5>host session</h5>
+                </button>
+            </div>
+        </div>
+
+        <!-- Student Join Screen -->
+        <div id="studentScreen" class="screen">
+            <h1>Join session</h1>
+            <div class="form-group">
+                <label>Enter session code here:</label>
+                <input type="text" id="sessionCode" placeholder="______">
+            </div>
+            <button class="submit-btn" onclick="joinSession()">Submit</button>
+            <p id="errorMessage" style="color: #ff4444; font-size: 1.2rem; margin-top: 1rem; display: none;">Invalid code. Try again</p>
+        </div>
+
+        <!-- Teacher Host Screen -->
+<div id="teacherScreen" class="screen">
+    <h1>Host session</h1>
+    <button class="submit-btn" onclick="generateCode()">Generate code</button>
+    <button class="submit-btn" onclick="" id="startButton" style="display:none"> Start </button>
+<p id="codeDisplay" style="display: none; font-size: 1.5rem; margin-top: 1rem;"> <strong><em>Your code: </em></strong> <span id="generatedCode"></span></p>
+<p style="font-size: 1.5rem; margin-top: 2rem; font-weight: 300;">Joined: <span id="joinedCount">0</span></p>
+</div>
+        
+    <script>
+        function showStudentScreen() {
+            document.getElementById('choiceScreen').classList.remove('active');
+            document.getElementById('studentScreen').classList.add('active');
+        }
+
+        function showTeacherScreen() {
+            document.getElementById('choiceScreen').classList.remove('active');
+            document.getElementById('teacherScreen').classList.add('active');
+        }
+
+        function joinSession() {
+    const code = document.getElementById('sessionCode').value;
+    const errorMsg = document.getElementById('errorMessage');
+    
+    if (code.trim() === '') {
+        errorMsg.style.display = 'block';
+        return;
+    }
+    
+    // Since no backend, all codes are invalid for now
+    errorMsg.style.display = 'block';
+}
+
+        function generateCode() {
+    console.log('Generate code clicked');
+
+    // show the code display
+    document.getElementById('codeDisplay').style.display = 'block';
+
+    // hide the Generate button
+    document.getElementById('generateBtn').style.display = 'none';
+
+    // show the Start button
+    document.getElementById('startButton').style.display = 'inline-block';
+        }
+    </script>
+</body>
+</html>
