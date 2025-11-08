@@ -1,4 +1,4 @@
-from flask import Flask, render_template,url_for, redirect
+from flask import Flask, render_template,url_for, redirect, request
 from string import ascii_uppercase
 from random import choice
 from threading import Lock
@@ -71,6 +71,28 @@ def call_understanding_check(code):
     s= get_session(code)
     if not s: return ("Session not found", 404)
     return render_template("teacher_understanding_check.html", code=code)
+
+#----student----
+@app.get("/student")
+def student_join_page():
+    return render_template("student_join.html", error=None)
+
+@app.post("/student/join")
+def student_join():
+    code=(request.form.get("code")or "").strip()
+    s= get_session(code)
+    if not s: return render_template("student_join.html", error="Invalid Code")
+    with lock:
+        if s["locked"]:
+            return render_template("student_join.html", error="Session has already started")
+        s["participants"] += 1 
+    return redirect(url_for("student_vote", code=code))
+
+@app.get("/student/<code>/check")
+def check_response(code):
+    s= get_session(code)
+    if not s: return("Session not found", 404)
+    return render_template("student_vote.html",code=code)
 
 
 
