@@ -44,10 +44,10 @@
     <form class="{% if not error %}stagger{% endif %}" method="post" action="/student/join">
       <input
         name="code"
-        placeholder="Enter 6-digit code"
-        inputmode="numeric"
-        pattern="\d{6}"
-        maxlength="6"
+        placeholder="Enter 8-letter code"
+        inputmode="latin"
+        pattern="[A-Z]{8}"
+        maxlength="8"
         autocomplete="one-time-code"
         aria-invalid="{{ 'true' if error else 'false' }}"
         required
