@@ -6,181 +6,185 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     :root{
-      --fg:#111; --muted:#666; --border:#e5e7eb; --btn:#111; --btnfg:#fff;
-
+      --fg:#111; --muted:#666; --border:#e5e7eb;
+      --btn:#111; --btnfg:#fff;
       --red:#dc2626;    --red-bg:#fee2e2;
-
-      /* ✅ Brighter, true yellow (not amber) */
       --yellow:#facc15; --yellow-bg:#fef9c3;
-
       --green:#16a34a;  --green-bg:#dcfce7;
-
       --radius:18px; --shadow:0 10px 30px rgba(0,0,0,.08);
     }
-
     *{ box-sizing:border-box }
     body{
       margin:0; min-height:100vh; display:grid; place-items:center; background:#fff;
       font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif; color:var(--fg);
     }
-    .wrap{ width:min(960px,94vw); padding:16px }
-    h1{ margin:0 0 14px; text-align:center; font-size:2rem; font-weight:800 }
-    h1::after{ content:""; display:block; width:56px; height:4px; border-radius:3px; background:var(--fg); margin:10px auto 0 }
+    .wrap{ width:min(880px,94vw); padding:28px 16px }
+    h1{ margin:0 0 18px; text-align:center; font-weight:800; font-size:clamp(28px,4.4vw,44px) }
+    h1::after{ content:""; display:block; width:64px; height:4px; border-radius:3px; background:var(--fg); margin:12px auto 0 }
 
-    .row{ display:grid; grid-template-columns: 1fr auto; gap:14px; align-items:start; margin-top:10px }
-    @media (max-width:820px){ .row{ grid-template-columns:1fr } }
+    .panel{ border:1px solid var(--border); border-radius:18px; background:#fff; box-shadow:var(--shadow); padding:18px; margin:16px 0 }
+    .panel h2{ margin:0 0 10px; font-size:1.05rem }
+    .row{ display:grid; grid-template-columns:1fr auto; gap:14px; align-items:center }
+    @media (max-width:760px){ .row{ grid-template-columns:1fr } }
 
-    .stack{ display:grid; gap:10px }
-    button{
-      appearance:none; padding:14px 16px; border-radius:14px; border:1px solid var(--btn);
-      background:var(--btn); color:var(--btnfg); font-weight:800; cursor:pointer; box-shadow:var(--shadow)
-    }
-    .btn-lite{
-      background:#fff; color:#111; border:1px solid var(--border); border-radius:10px; padding:10px 12px; font-weight:700; cursor:pointer;
-    }
-    .pill{
-      min-width:190px; text-align:center; padding:10px 14px; border:1px solid var(--border);
-      border-radius:999px; color:var(--muted); font-weight:700; background:#fff
-    }
-    .meta{ margin:12px 0 10px; color:var(--muted); font-size:1.05rem; text-align:center }
+    input[type="text"]{ border:1px solid var(--border); border-radius:12px; padding:12px 14px; font-size:16px; width:100% }
+    input::placeholder{ color:#9ca3af }
+    button{ appearance:none; cursor:pointer; font-weight:800; padding:14px 18px; border-radius:14px; border:1px solid var(--btn); background:var(--btn); color:var(--btnfg); box-shadow:var(--shadow) }
+    .btn-lite{ background:#fff; color:#111; border:1px solid var(--border); border-radius:12px; padding:10px 12px; font-weight:700; box-shadow:var(--shadow) }
+    .pill{ display:inline-block; min-width:190px; text-align:center; padding:10px 14px; border:1px solid var(--border); border-radius:999px; color:var(--muted); font-weight:700; background:#fff; box-shadow:var(--shadow) }
+    .meta{ margin:10px 0; color:var(--muted); font-size:1.05rem; text-align:center }
 
-    .grid{ display:grid; grid-template-columns: repeat(3, 1fr); gap:14px }
-    .stat{ border:1px solid var(--border); border-radius:14px; padding:16px; text-align:center; background:#fff }
-    .n{ font-size:2rem; font-weight:800; letter-spacing:.02em }
+    .grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px }
+    .stat{ border:1px solid var(--border); border-radius:14px; padding:16px; text-align:center; background:#fff; box-shadow:var(--shadow) }
+    .n{ font-size:2rem; font-weight:800 }
     .label{ color:var(--muted); margin-top:4px; font-weight:700 }
     .cf{ border-color:var(--red);    background:var(--red-bg) }
     .ss{ border-color:var(--yellow); background:var(--yellow-bg) }
     .nc{ border-color:var(--green);  background:var(--green-bg) }
 
-    .panel{ border:1px solid var(--border); border-radius:14px; background:#fff; padding:14px; }
-    .panel h2{ margin:0 0 8px; font-size:1.05rem }
-    .row2{ display:grid; grid-template-columns: 1fr auto; gap:10px; align-items:center }
-    input[type="text"]{ border:1px solid var(--border); border-radius:10px; padding:10px 12px; font-size:16px; width:100% }
-
-    .switch{ display:inline-flex; align-items:center; gap:8px; user-select:none; cursor:pointer; color:#111; font-weight:700; }
-    .switch input{ appearance:none; width:38px; height:22px; border-radius:999px; position:relative; background:#e5e7eb; outline:none; transition:.2s }
+    .switch{ display:inline-flex; align-items:center; gap:8px; user-select:none; cursor:pointer; font-weight:700 }
+    .switch input{ appearance:none; width:40px; height:24px; border-radius:999px; position:relative; background:#e5e7eb; outline:none; transition:.2s }
     .switch input:checked{ background:#111 }
-    .switch input::after{ content:""; position:absolute; top:3px; left:3px; width:16px; height:16px; border-radius:50%; background:#fff; transition:.2s }
+    .switch input::after{ content:""; position:absolute; top:3px; left:3px; width:18px; height:18px; border-radius:50%; background:#fff; transition:.2s }
     .switch input:checked::after{ transform:translateX(16px) }
 
     .qcount{ color:var(--muted); font-weight:700 }
-    .qlist{ margin-top:10px; display:grid; gap:8px; max-height:220px; overflow:auto }
-    .qitem{ border:1px solid var(--border); border-radius:12px; padding:10px; }
+    .qlist{ margin-top:10px; display:grid; gap:10px; max-height:220px; overflow:auto }
+    .qitem{ border:1px solid var(--border); border-radius:12px; padding:12px; background:#fff; box-shadow:var(--shadow) }
     .qmeta{ color:var(--muted); font-size:.88rem; margin-top:6px }
     .qactions{ display:flex; gap:8px; margin-top:8px }
 
-    /* Chart (shown only during active vote) */
-    .chart{ margin-top:14px; border:1px solid var(--border); border-radius:14px; background:#fff; padding:14px; }
+    .chart{ margin-top:14px; border:1px solid var(--border); border-radius:14px; background:#fff; padding:14px; box-shadow:var(--shadow) }
     .chart h2{ margin:0 0 8px; font-size:1.05rem }
-    .bars{ display:grid; grid-template-columns: repeat(3, 1fr); gap:14px; align-items:end; height:180px; padding:6px 4px 0; }
-    .bar{ position:relative; border-radius:10px 10px 6px 6px; min-height:4px; display:flex; align-items:flex-end; justify-content:center; transition:height .25s ease; }
-    .bar .val{ position:absolute; top:-22px; font-weight:800; font-size:14px; color:#111; }
-    .bar.red{    background:var(--red);    border:1px solid var(--red); }
-
-    /* ✅ Much more yellow for “So-so” column */
-    .bar.yellow{ background:#fde047; border:1px solid #eab308; }
-
-    .bar.green{  background:var(--green);  border:1px solid var(--green); }
-    .xlabel{ text-align:center; margin-top:6px; font-weight:700; color:#555; font-size:14px; }
+    .bars{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px; align-items:end; height:180px; padding:6px 4px 0 }
+    .bar{ position:relative; border-radius:10px 10px 6px 6px; min-height:4px; display:flex; align-items:flex-end; justify-content:center; transition:height .25s ease }
+    .bar .val{ position:absolute; top:-22px; font-weight:800; font-size:14px; color:#111 }
+    .bar.red{    background:var(--red);    border:1px solid var(--red) }
+    .bar.yellow{ background:#fde047;       border:1px solid #eab308 }
+    .bar.green{  background:var(--green);  border:1px solid var(--green) }
+    .xlabel{ text-align:center; margin-top:6px; font-weight:700; color:#555; font-size:14px }
 
     /* Poll */
-    .poll{ border:1px solid var(--border); border-radius:14px; background:#fff; padding:14px; margin-top:14px; }
-    .poll h2{ margin:0 0 8px; font-size:1.05rem }
-    .poll-row{ display:grid; grid-template-columns: auto 1fr auto; gap:8px; align-items:center; }
-    .badge{ display:inline-block; border:1px solid var(--border); border-radius:999px; padding:6px 10px; font-weight:700; color:#555; background:#fff; }
-    .pbar-wrap{ border:1px solid var(--border); border-radius:999px; overflow:hidden; height:16px; }
-    .pbar{ height:100%; background:#16a34a; width:0% }
+    .poll-row{ display:grid; grid-template-columns:auto 1fr auto; gap:8px; align-items:center }
+    .badge{ display:inline-block; border:1px solid var(--border); border-radius:999px; padding:6px 10px; font-weight:700; color:#555; background:#fff; box-shadow:var(--shadow) }
+
+    .pbar-wrap{
+      position:relative;
+      border:1px solid var(--border);
+      border-radius:999px;
+      overflow:hidden;
+      height:16px;
+      box-shadow:var(--shadow);
+      /* gradient track: green → yellow → red */
+      background: linear-gradient(90deg, var(--green) 0%, #facc15 50%, var(--red) 100%);
+    }
+    /* the old fill is optional now; keep it for subtle shading */
+    .pbar{ height:100%; width:0%; background:rgba(255,255,255,.25) }
+
+    /* average marker */
+    .avg-marker{
+      position:absolute; top:-4px; transform:translateX(-50%);
+      width:2px; height:24px; background:#111; border-radius:2px;
+    }
+    .avg-marker::after{
+      content:attr(data-pct) "%";
+      position:absolute; top:-20px; left:50%; transform:translateX(-50%);
+      font-size:12px; font-weight:800; color:#111; background:#fff;
+      border:1px solid var(--border); border-radius:999px; padding:2px 6px;
+    }
+    /* hidden helper */
+    .hidden{ display:none !important }
   </style>
 </head>
 <body>
   <main id="state" class="wrap" data-code="{{ code }}">
     <h1>Session code: <span id="scode">{{ code }}</span></h1>
 
-    <section class="row">
-      <div class="stack">
-        <!-- Vote window -->
-        <form id="start" onsubmit="return false;">
-          <button type="submit">Call 60-second Vote</button>
-        </form>
+    <section class="panel">
+      <h2>Live Vote</h2>
+      <form id="start" onsubmit="return false;">
+        <button type="submit">Call 60-second Vote</button>
+      </form>
+    </section>
 
-        <!-- Broadcast question -->
-        <div class="panel" aria-labelledby="qlab">
-          <h2 id="qlab">Ask a question to all students</h2>
-          <div class="row2">
-            <input id="qinput" type="text" placeholder="Type your question…" />
-            <button id="qsend" type="button">Send</button>
-          </div>
-          <div style="margin-top:8px">
-            <button id="qclear" class="btn-lite" type="button">Clear broadcast question</button>
-          </div>
+    <section class="panel" aria-labelledby="qlab">
+      <h2 id="qlab">Ask a question to all students</h2>
+      <div class="row">
+        <input id="qinput" type="text" placeholder="Type your question…" />
+        <button id="qsend" type="button">Send</button>
+      </div>
+      <div style="margin-top:10px">
+        <button id="qclear" class="btn-lite" type="button">Clear broadcast question</button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Student Questions</h2>
+      <label class="switch">
+        <input id="allow" type="checkbox" />
+        <span>Allow student questions</span>
+      </label>
+      <div class="qcount" id="qcount">No questions yet</div>
+      <div class="qlist" id="qlist"></div>
+    </section>
+
+    <section id="voteBlock" class="panel" hidden>
+      <div id="timer" class="pill" aria-live="polite">Window: closed</div>
+      <p class="meta">Participants: <strong id="pcount">0</strong></p>
+
+      <div class="grid">
+        <div class="stat cf"><div id="cf" class="n">0</div><div class="label">Confused</div></div>
+        <div class="stat ss"><div id="ss" class="n">0</div><div class="label">So-so</div></div>
+        <div class="stat nc"><div id="nc" class="n">0</div><div class="label">Not Confused</div></div>
+      </div>
+
+      <div class="chart" aria-labelledby="chart-title">
+        <h2 id="chart-title">Live Vote Results</h2>
+        <div class="bars">
+          <div class="bar red"    id="bar-cf" style="height:4px"><span class="val" id="val-cf">0</span></div>
+          <div class="bar yellow" id="bar-ss" style="height:4px"><span class="val" id="val-ss">0</span></div>
+          <div class="bar green"  id="bar-nc" style="height:4px"><span class="val" id="val-nc">0</span></div>
         </div>
-
-        <!-- Student Questions (toggle + inbox) -->
-        <div class="panel">
-          <h2>Student Questions</h2>
-          <label class="switch">
-            <input id="allow" type="checkbox" />
-            <span>Allow student questions</span>
-          </label>
-          <div class="qcount" id="qcount">No questions yet</div>
-          <div class="qlist" id="qlist"></div>
+        <div class="grid" style="grid-template-columns:repeat(3,1fr);gap:14px;margin-top:2px">
+          <div class="xlabel">Confused</div>
+          <div class="xlabel">So-so</div>
+          <div class="xlabel">Not Confused</div>
         </div>
+      </div>
+    </section>
 
-        <!-- Visible only while vote is active -->
-        <div id="voteBlock" hidden>
-          <div id="timer" class="pill" aria-live="polite">Window: closed</div>
-
-          <p class="meta">Participants: <strong id="pcount">0</strong></p>
-          <section class="grid">
-            <div class="stat cf"><div id="cf" class="n">0</div><div class="label">Confused</div></div>
-            <div class="stat ss"><div id="ss" class="n">0</div><div class="label">So-so</div></div>
-            <div class="stat nc"><div id="nc" class="n">0</div><div class="label">Not Confused</div></div>
-          </section>
-
-          <div class="chart" aria-labelledby="chart-title">
-            <h2 id="chart-title">Live Vote Results</h2>
-            <div class="bars">
-              <div class="bar red"    id="bar-cf" style="height:4px"><span class="val" id="val-cf">0</span></div>
-              <div class="bar yellow" id="bar-ss" style="height:4px"><span class="val" id="val-ss">0</span></div>
-              <div class="bar green"  id="bar-nc" style="height:4px"><span class="val" id="val-nc">0</span></div>
-            </div>
-            <div class="grid" style="grid-template-columns: repeat(3, 1fr); gap:14px; margin-top:2px">
-              <div class="xlabel">Confused</div>
-              <div class="xlabel">So-so</div>
-              <div class="xlabel">Not Confused</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Poll controls & results -->
-        <div class="poll">
-          <h2>Poll</h2>
-          <div class="row2">
-            <input id="pollq" type="text" placeholder="Yes/No question(optional)…" />
-            <div style="display:flex; gap:8px">
-              <button id="pollStart" type="button">Start a Poll</button>
-              <button id="pollStop"  type="button" class="btn-lite">Stop</button>
-            </div>
-          </div>
-
-          <div id="pollLive" style="margin-top:12px">
-            <div class="meta" id="pollStatus" style="margin:0">Poll is not running.</div>
-            <div class="poll-row" style="margin-top:8px">
-              <span class="badge">Yes: <span id="yesCount">0</span></span>
-              <div class="pbar-wrap"><div id="pbarYes" class="pbar"></div></div>
-              <span class="badge">No: <span id="noCount">0</span></span>
-            </div>
-            <div class="meta" style="margin-top:6px">Total: <span id="pollTotal">0</span></div>
-          </div>
+    <!-- Poll -->
+    <section class="panel">
+      <h2>Poll</h2>
+      <div class="row">
+        <input id="pollq" type="text" placeholder="Yes/No question(optional)…" />
+        <div style="display:flex; gap:8px">
+          <button id="pollStart" type="button">Start a Poll</button>
+          <button id="pollStop"  type="button" class="btn-lite">Stop</button>
         </div>
       </div>
 
-      <div></div>
+      <div id="pollLive" style="margin-top:12px">
+        <div class="meta" id="pollStatus" style="margin:0">Poll is not running.</div>
+
+        <!-- results row (hidden when not active) -->
+        <div id="pollResults" class="poll-row hidden" style="margin-top:8px">
+          <span class="badge" id="yesBadge">Yes: <span id="yesCount">0</span></span>
+          <div class="pbar-wrap" id="track">
+            <div id="pbarYes" class="pbar"></div>
+            <div id="avgMarker" class="avg-marker" data-pct="0" style="left:0%"></div>
+          </div>
+          <span class="badge" id="noBadge">No: <span id="noCount">0</span></span>
+        </div>
+
+        <div id="pollTotalWrap" class="meta hidden" style="margin-top:6px">
+          Total: <span id="pollTotal">0</span>
+        </div>
+      </div>
     </section>
   </main>
 
   <script>
-    // Session code
     function getSessionCode(){
       const el = document.getElementById('state');
       const fromAttr = el?.dataset.code || '';
@@ -190,7 +194,6 @@
     }
     const code = getSessionCode();
 
-    // Elements
     const els = {
       start:  document.getElementById('start'),
       voteBlock: document.getElementById('voteBlock'),
@@ -205,7 +208,6 @@
       allow:  document.getElementById('allow'),
       qcount: document.getElementById('qcount'),
       qlist:  document.getElementById('qlist'),
-      // Chart
       barCF:  document.getElementById('bar-cf'),
       barSS:  document.getElementById('bar-ss'),
       barNC:  document.getElementById('bar-nc'),
@@ -215,62 +217,78 @@
     };
 
     const pollEls = {
-        q:      document.getElementById('pollq'),      // <input>
-        start:  document.getElementById('pollStart'),
-        stop:   document.getElementById('pollStop'),
-        status: document.getElementById('pollStatus'),
-        yes:    document.getElementById('yesCount'),
-        no:     document.getElementById('noCount'),
-        total:  document.getElementById('pollTotal'),
-        bar:    document.getElementById('pbarYes'),    // green fill
+      q:      document.getElementById('pollq'),
+      start:  document.getElementById('pollStart'),
+      stop:   document.getElementById('pollStop'),
+      status: document.getElementById('pollStatus'),
+      results:document.getElementById('pollResults'),
+      yes:    document.getElementById('yesCount'),
+      no:     document.getElementById('noCount'),
+      total:  document.getElementById('pollTotal'),
+      totalWrap: document.getElementById('pollTotalWrap'),
+      bar:    document.getElementById('pbarYes'),
+      marker: document.getElementById('avgMarker'),
     };
 
-    // Helpers
     const setVoteUI = (open) => { els.voteBlock.hidden = !open; };
     const hBar = (v,max,H=160)=> v===0 ? 4 : Math.max(8, Math.round((v/max)*H));
+
     function renderChart(a,b,c){
       const max = Math.max(1,a,b,c);
-      els.valCF.textContent=a; els.valSS.textContent=b; els.valNC.textContent=c;
-      els.barCF.style.height = hBar(a,max)+'px';
-      els.barSS.style.height = hBar(b,max)+'px';
-      els.barNC.style.height = hBar(c,max)+'px';
+      document.getElementById('val-cf').textContent=a;
+      document.getElementById('val-ss').textContent=b;
+      document.getElementById('val-nc').textContent=c;
+      document.getElementById('bar-cf').style.height = hBar(a,max)+'px';
+      document.getElementById('bar-ss').style.height = hBar(b,max)+'px';
+      document.getElementById('bar-nc').style.height = hBar(c,max)+'px';
     }
+
     function renderPoll(p){
-        const active = !!(p && p.active);
-        pollEls.status.textContent = active
+      const active = !!(p && p.active);
+      pollEls.status.textContent = active
         ? (p.question ? `Poll running: ${p.question}` : 'Poll running.')
         : 'Poll is not running.';
 
-        const yes = Number(p?.yes || 0);
-        const no  = Number(p?.no  || 0);
-        const tot = yes + no;
+      // hide/show results area
+      pollEls.results.classList.toggle('hidden', !active);
+      pollEls.totalWrap.classList.toggle('hidden', !active);
 
-        pollEls.yes.textContent   = yes;
-        pollEls.no.textContent    = no;
-        pollEls.total.textContent = tot;
-        pollEls.bar.style.width   = (tot ? Math.round((yes / tot) * 100) : 0) + '%';
+      const yes = Number(p?.yes || 0);
+      const no  = Number(p?.no  || 0);
+      const tot = yes + no;
+
+      // counts (only visible when active)
+      pollEls.yes.textContent   = yes;
+      pollEls.no.textContent    = no;
+      pollEls.total.textContent = tot;
+
+      // fill (optional) and marker position
+      const pct = tot ? Math.round((yes / tot) * 100) : 0;
+      pollEls.bar.style.width   = pct + '%';
+      pollEls.marker.style.left = pct + '%';
+      pollEls.marker.setAttribute('data-pct', pct);
     }
 
-    // Actions
+    // actions
     els.start.addEventListener('submit', async () => {
       try{ await fetch(`/api/session/${encodeURIComponent(code)}/start_window`, { method:'POST' }); }catch(_){}
-      setVoteUI(true);   // show immediately
+      setVoteUI(true);
       tickStats();
     });
-    // teacher types a new broadcast
-    els.qsend.addEventListener('click', async () => {
-    const text = (els.qinput.value || '').trim();
-    if (!text) return;
-    try {
-        await fetch(`/api/session/${encodeURIComponent(code)}/question`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text })   // <- only text
+
+    document.getElementById('qsend').addEventListener('click', async () => {
+      const text = (els.qinput.value || '').trim();
+      if (!text) return;
+      try{
+        await fetch(`/api/session/${encodeURIComponent(code)}/question`,{
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ text })
         });
         els.qinput.value = '';
-    } catch {}
+      }catch(_){}
     });
-    els.qclear.addEventListener('click', async () => {
+
+    document.getElementById('qclear').addEventListener('click', async () => {
       try{
         await fetch(`/api/session/${encodeURIComponent(code)}/question`,{
           method:'POST', headers:{'Content-Type':'application/json'},
@@ -278,6 +296,7 @@
         });
       }catch(_){}
     });
+
     async function setAllow(val){
       try{
         await fetch(`/api/session/${encodeURIComponent(code)}/qperm`,{
@@ -286,27 +305,24 @@
         });
       }catch(_){}
     }
-    els.allow.addEventListener('change', e => setAllow(e.target.checked));
+    document.getElementById('allow').addEventListener('change', e => setAllow(e.target.checked));
 
-    // start/stop handlers (update your existing listeners to use pollEls)
     pollEls.start.addEventListener('click', async () => {
-    const question = (pollEls.q.value || '').trim();
-    try {
-        await fetch(`/api/session/${encodeURIComponent(code)}/poll/start`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question })
+      const question = (pollEls.q.value || '').trim();
+      try{
+        await fetch(`/api/session/${encodeURIComponent(code)}/poll/start`,{
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ question })
         });
-    } catch {}
-    tickPoll();
+      }catch(_){}
+      tickPoll();
     });
 
     pollEls.stop.addEventListener('click', async () => {
-        try { await fetch(`/api/session/${encodeURIComponent(code)}/poll/stop`, { method: 'POST' }); } catch {}
-        tickPoll();
+      try{ await fetch(`/api/session/${encodeURIComponent(code)}/poll/stop`, { method:'POST' }); }catch(_){}
+      tickPoll();
     });
 
-    // Polling
     async function tickStats(){
       try{
         const r = await fetch(`/api/session/${encodeURIComponent(code)}/stats`, { headers:{'Accept':'application/json'} });
@@ -323,17 +339,19 @@
         renderChart(d.confused??0, d.soso??0, d.not_confused??0);
       }catch(_){}
     }
+
     async function tickPermInbox(){
       try{
         const r1 = await fetch(`/api/session/${encodeURIComponent(code)}/qperm`, { headers:{'Accept':'application/json'} });
-        if(r1.ok){ const p=await r1.json(); els.allow.checked = !!(p?.allow); }
+        if(r1.ok){ const p=await r1.json(); document.getElementById('allow').checked = !!(p?.allow); }
       }catch(_){}
       try{
         const r2 = await fetch(`/api/session/${encodeURIComponent(code)}/student_questions`, { headers:{'Accept':'application/json'} });
         if(!r2.ok) return;
         const arr = await r2.json();
-        els.qcount.textContent = (arr&&arr.length)? `${arr.length} question${arr.length>1?'s':''}` : 'No questions yet';
-        const root = els.qlist; root.innerHTML='';
+        document.getElementById('qcount').textContent =
+          (arr&&arr.length)? `${arr.length} question${arr.length>1?'s':''}` : 'No questions yet';
+        const root = document.getElementById('qlist'); root.innerHTML='';
         (arr||[]).forEach(q=>{
           const div = document.createElement('div');
           div.className='qitem';
@@ -347,11 +365,10 @@
             </div>`;
           div.querySelector('[data-a="broadcast"]').addEventListener('click', async ()=>{
             try{
-                await fetch(`/api/session/${encodeURIComponent(code)}/question`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text: q.text, qid: q.id })  // <- include qid
-                });
+              await fetch(`/api/session/${encodeURIComponent(code)}/question`,{
+                method:'POST', headers:{'Content-Type':'application/json'},
+                body: JSON.stringify({ text: q.text, qid: q.id })
+              });
             }catch(_){}
           });
           div.querySelector('[data-a="remove"]').addEventListener('click', async ()=>{
@@ -364,26 +381,15 @@
         });
       }catch(_){}
     }
-    async function tickPoll() {
-        try {
-            const r = await fetch(`/api/session/${encodeURIComponent(code)}/poll`, { cache: 'no-store', headers: { 'Accept': 'application/json' } });
-            if (!r.ok) return;
-            const p = await r.json();
-            const active = !!p.active;
-            pollEls.status.textContent = active
-            ? (p.question ? `Poll running: ${p.question}` : 'Poll running.')
-            : 'Poll is not running.';
 
-            const yes = Number(p.yes || 0), no = Number(p.no || 0);
-            const tot = yes + no;
-            pollEls.yes.textContent = yes;
-            pollEls.no.textContent = no;
-            pollEls.total.textContent = tot;
-            pollEls.bar.style.width = (tot ? Math.round((yes / tot) * 100) : 0) + '%';
-
-        } catch {}
+    async function tickPoll(){
+      try{
+        const r = await fetch(`/api/session/${encodeURIComponent(code)}/poll`, { cache:'no-store', headers:{'Accept':'application/json'} });
+        if(!r.ok) return;
+        renderPoll(await r.json());
+      }catch(_){}
     }
-    
+
     // boot
     tickStats(); tickPermInbox(); tickPoll();
     setInterval(tickStats, 1000);
