@@ -156,7 +156,7 @@
         <div class="poll">
           <h2>Poll</h2>
           <div class="row2">
-            <input id="pollq" type="text" placeholder="Poll question (optional)…" />
+            <input id="pollq" type="text" placeholder="Yes/No question(optional)…" />
             <div style="display:flex; gap:8px">
               <button id="pollStart" type="button">Start a Poll</button>
               <button id="pollStop"  type="button" class="btn-lite">Stop</button>
@@ -212,15 +212,17 @@
       valCF:  document.getElementById('val-cf'),
       valSS:  document.getElementById('val-ss'),
       valNC:  document.getElementById('val-nc'),
-      // Poll
-      pollQ:      document.getElementById('pollq'),
-      pollStart:  document.getElementById('pollStart'),
-      pollStop:   document.getElementById('pollStop'),
-      pollStatus: document.getElementById('pollStatus'),
-      yesCount:   document.getElementById('yesCount'),
-      noCount:    document.getElementById('noCount'),
-      pollTotal:  document.getElementById('pollTotal'),
-      pbarYes:    document.getElementById('pbarYes'),
+    };
+
+    const pollEls = {
+        q:      document.getElementById('pollq'),      // <input>
+        start:  document.getElementById('pollStart'),
+        stop:   document.getElementById('pollStop'),
+        status: document.getElementById('pollStatus'),
+        yes:    document.getElementById('yesCount'),
+        no:     document.getElementById('noCount'),
+        total:  document.getElementById('pollTotal'),
+        bar:    document.getElementById('pbarYes'),    // green fill
     };
 
     // Helpers
@@ -234,14 +236,19 @@
       els.barNC.style.height = hBar(c,max)+'px';
     }
     function renderPoll(p){
-      const active = !!p?.active;
-      els.pollStatus.textContent = active
-        ? (p?.question ? `Poll running: “${p.question}”` : 'Poll running')
+        const active = !!(p && p.active);
+        pollEls.status.textContent = active
+        ? (p.question ? `Poll running: ${p.question}` : 'Poll running.')
         : 'Poll is not running.';
-      const yes = Number(p?.yes||0), no = Number(p?.no||0);
-      const tot = Math.max(0, yes+no);
-      els.yesCount.textContent = yes; els.noCount.textContent = no; els.pollTotal.textContent = tot;
-      els.pbarYes.style.width = (tot ? Math.round((yes/tot)*100) : 0)+'%';
+
+        const yes = Number(p?.yes || 0);
+        const no  = Number(p?.no  || 0);
+        const tot = yes + no;
+
+        pollEls.yes.textContent   = yes;
+        pollEls.no.textContent    = no;
+        pollEls.total.textContent = tot;
+        pollEls.bar.style.width   = (tot ? Math.round((yes / tot) * 100) : 0) + '%';
     }
 
     // Actions
@@ -277,20 +284,22 @@
     }
     els.allow.addEventListener('change', e => setAllow(e.target.checked));
 
-    // Poll controls
-    els.pollStart.addEventListener('click', async ()=>{
-      const question = (els.pollQ.value||'').trim();
-      try{
-        await fetch(`/api/session/${encodeURIComponent(code)}/poll/start`,{
-          method:'POST', headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({ question })
+    // start/stop handlers (update your existing listeners to use pollEls)
+    pollEls.start.addEventListener('click', async () => {
+    const question = (pollEls.q.value || '').trim();
+    try {
+        await fetch(`/api/session/${encodeURIComponent(code)}/poll/start`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question })
         });
-      }catch(_){}
-      tickPoll();
+    } catch {}
+    tickPoll();
     });
-    els.pollStop.addEventListener('click', async ()=>{
-      try{ await fetch(`/api/session/${encodeURIComponent(code)}/poll/stop`,{ method:'POST' }); }catch(_){}
-      tickPoll();
+
+    pollEls.stop.addEventListener('click', async () => {
+        try { await fetch(`/api/session/${encodeURIComponent(code)}/poll/stop`, { method: 'POST' }); } catch {}
+        tickPoll();
     });
 
     // Polling
@@ -350,14 +359,26 @@
         });
       }catch(_){}
     }
-    async function tickPoll(){
-      try{
-        const r = await fetch(`/api/session/${encodeURIComponent(code)}/poll`, { headers:{'Accept':'application/json'} });
-        if(!r.ok) return;
-        renderPoll(await r.json());
-      }catch(_){}
-    }
+    async function tickPoll() {
+        try {
+            const r = await fetch(`/api/session/${encodeURIComponent(code)}/poll`, { cache: 'no-store', headers: { 'Accept': 'application/json' } });
+            if (!r.ok) return;
+            const p = await r.json();
+            const active = !!p.active;
+            pollEls.status.textContent = active
+            ? (p.question ? `Poll running: ${p.question}` : 'Poll running.')
+            : 'Poll is not running.';
 
+            const yes = Number(p.yes || 0), no = Number(p.no || 0);
+            const tot = yes + no;
+            pollEls.yes.textContent = yes;
+            pollEls.no.textContent = no;
+            pollEls.total.textContent = tot;
+            pollEls.bar.style.width = (tot ? Math.round((yes / tot) * 100) : 0) + '%';
+
+        } catch {}
+    }
+    
     // boot
     tickStats(); tickPermInbox(); tickPoll();
     setInterval(tickStats, 1000);

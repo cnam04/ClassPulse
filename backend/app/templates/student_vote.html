@@ -61,7 +61,7 @@
       </div>
 
       <!-- Before window -->
-      <div id="pre" class="hint">Please wait until your teacher calls the vote.</div>
+      <div id="pre" class="hint">Pay attention!</div>
 
       <!-- While window open -->
       <div id="win" class="pill" hidden>Window: checking…</div>
@@ -148,15 +148,21 @@
   }
   const voterId=getVoterId();
   const votedKey=`voted_${code}`;
-  const polledKey=`polled_${code}`;
   const hasVoted=()=>localStorage.getItem(votedKey)==='1';
   const markVoted=()=>localStorage.setItem(votedKey,'1');
-  const hasPolled=()=>localStorage.getItem(polledKey)==='1';
-  const markPolled=()=>localStorage.setItem(polledKey,'1');
-
+  
   let windowOpen=false;
   let lastOpen = false;
   let lastWindowId=0;
+  let currentPollId = 0;
+  let currentPollKey = '';
+
+function setPollKey(id){
+  currentPollId = id|0;
+  currentPollKey = `polled_${code}_${currentPollId}`;
+}
+function hasPolled(){ return localStorage.getItem(currentPollKey) === '1'; }
+function markPolled(){ localStorage.setItem(currentPollKey, '1'); }
 
   function updateVoteUI(){
     if(windowOpen){
@@ -283,31 +289,52 @@
   // POLL — show/hide and vote
   async function fetchPoll(){
     try{
-      const r = await fetch(`/api/session/${encodeURIComponent(code)}/poll`, { headers:{'Accept':'application/json'} });
-      if(!r.ok){ pollBox.hidden = true; return; }
-      const p = await r.json();
-      const active = !!p?.active;
-      pollBox.hidden = !active;
-      if(active){
+        const r = await fetch(`/api/session/${encodeURIComponent(code)}/poll`, {
+        headers:{'Accept':'application/json'}, cache:'no-store'
+        });
+        if(!r.ok){ pollBox.hidden = true; return; }
+        const p = await r.json();
+        const active = !!p.active;
+
+        // ⬇️ if poll_id changed, switch the localStorage key and re-enable buttons
+        if (active && typeof p.poll_id === 'number' && p.poll_id !== currentPollId){
+        setPollKey(p.poll_id);
+        btnYes.disabled = btnNo.disabled = hasPolled();
+        pollMsg.textContent = hasPolled() ? 'Thanks—your vote was recorded.' : '';
+        }
+
+        pollBox.hidden = !active;
+        if(active){
         pollTitle.textContent = p?.question ? p.question : 'Quick poll';
-        const done = hasPolled();
-        btnYes.disabled = done; btnNo.disabled = done;
-        pollMsg.textContent = done ? 'Thanks—your vote was recorded.' : '';
-      }
+        // keep buttons state in sync in case we landed mid-poll
+        btnYes.disabled = btnNo.disabled = hasPolled();
+        if (hasPolled()) pollMsg.textContent = 'Thanks—your vote was recorded.';
+        } else {
+        // no active poll -> clear UI but keep past keys (history is fine)
+        pollMsg.textContent = '';
+        }
     }catch{ pollBox.hidden = true; }
-  }
-  async function sendPollVote(choice){
+    }
+    async function sendPollVote(choice){
     try{
-      const r = await fetch(`/api/session/${encodeURIComponent(code)}/poll/vote`,{
+        const r = await fetch(`/api/session/${encodeURIComponent(code)}/poll/vote`,{
         method:'POST', headers:{'Content-Type':'application/json'},
         body: JSON.stringify({ choice, voter_id: voterId })
-      });
-      if(r.ok){ markPolled(); btnYes.disabled = btnNo.disabled = true; pollMsg.textContent='Thanks—your vote was recorded.'; }
-      else{ pollMsg.textContent='Could not send vote.'; }
-    }catch{ pollMsg.textContent='Network error.'; }
-  }
-  btnYes.addEventListener('click', ()=> sendPollVote('yes'));
-  btnNo .addEventListener('click', ()=> sendPollVote('no'));
+        });
+        if(r.ok){
+        markPolled();
+        btnYes.disabled = btnNo.disabled = true;
+        pollMsg.textContent = 'Thanks—your vote was recorded.';
+        }else{
+        pollMsg.textContent = 'Could not send vote.';
+        }
+    }catch{
+        pollMsg.textContent = 'Network error.';
+    }
+    }
+    btnYes.addEventListener('click', ()=> sendPollVote('yes'));
+    btnNo .addEventListener('click', ()=> sendPollVote('no'));
+
 
   // start polling
   fetchStats(); fetchQuestion(); fetchAskPermission(); fetchPoll();

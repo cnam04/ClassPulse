@@ -20,6 +20,10 @@ def K_votes(code): return f"session:{code}:votes"    # HASH: {not_confused, soso
 def K_meta(code):  return f"session:{code}:meta"     # HASH: {locked, participants, window_active, window_expires_at}
 def K_voted(code): return f"session:{code}:voted"    # SET:  voter_id who already voted this window
 
+# ------ Polling Keys--------- #
+def K_poll(code): return f"session:{code}:poll"      # HASH: {active, question, yes, no, poll_id}
+def K_poll_voted(code):  return f"session:{code}:poll_voted" # SET: voter_ids who voted this poll
+
 
 def session_exists(code: str) -> bool:
     # exists if meta hash is present
@@ -114,6 +118,44 @@ def read_stats(code):
         "window_seconds_remaining": remaining,
         "window_id":    int(meta.get("window_id", 0))
     }
+
+def poll_start(code, question=""):
+    # bump poll_id and (re)initialize counts; clear voted set
+    pipe = r.pipeline()
+    pipe.hincrby(K_poll(code), "poll_id", 1)
+    pipe.hset(K_poll(code), mapping={
+        "active": 1, "question": question or "", "yes": 0, "no": 0
+    })
+    pipe.delete(K_poll_voted(code))
+    pipe.execute()
+
+def poll_stop(code):
+    r.hset(K_poll(code), "active", 0)
+
+def poll_vote(code, choice, voter_id):
+    if not voter_id:
+        return False, "missing voter_id"
+    poll = r.hgetall(K_poll(code)) or {}
+    if poll.get("active") != "1":
+        return False, "not active"
+    if r.sismember(K_poll_voted(code), voter_id):
+        return False, "already voted"
+    field = "yes" if choice == "yes" else "no"
+    pipe = r.pipeline()
+    pipe.hincrby(K_poll(code), field, 1)
+    pipe.sadd(K_poll_voted(code), voter_id)
+    pipe.execute()
+    return True, None
+
+def poll_read(code):
+    h = r.hgetall(K_poll(code)) or {}
+    return {
+        "active": h.get("active") == "1",
+        "question": h.get("question", ""),
+        "yes": int(h.get("yes", 0)),
+        "no": int(h.get("no", 0)),
+        "poll_id": int(h.get("poll_id", 0)),
+    }
 # ----------- PAGES -------------------- #
 @app.route("/")
 def index():
@@ -194,8 +236,6 @@ def api_stats(code):
     resp.headers["Cache-Control"]="no-store"
     return resp
 
-
-
 @app.post("/api/session/<code>/vote")
 def api_vote(code):
     if not session_exists(code):
@@ -212,6 +252,36 @@ def api_vote(code):
         return jsonify({"ok": False, "reason": reason}), http
     return jsonify({"ok": True})
 
+@app.post("/api/session/<code>/poll/start")
+def api_poll_start(code):
+    q = (request.json or {}).get("question", "")
+    poll_start(code, q)
+    return jsonify({"ok": True})
+
+@app.post("/api/session/<code>/poll/stop")
+def api_poll_stop(code):
+    poll_stop(code)
+    return jsonify({"ok": True})
+
+@app.get("/api/session/<code>/poll")
+def api_poll_get(code):
+    data = poll_read(code)
+    resp = jsonify(data)
+    resp.headers["Cache-Control"] = "no-store"
+    return resp
+
+@app.post("/api/session/<code>/poll/vote")
+def api_poll_vote(code):
+    payload = request.get_json(silent=True) or {}
+    choice = (payload.get("choice") or "").lower()
+    voter  = payload.get("voter_id")
+    if choice not in ("yes","no"):
+        return jsonify({"ok": False, "reason": "bad choice"}), 400
+    ok, reason = poll_vote(code, choice, voter)
+    if not ok:
+        http = 409 if reason=="already voted" else 403 if reason=="not active" else 400
+        return jsonify({"ok": False, "reason": reason}), http
+    return jsonify({"ok": True})
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT",5051))
