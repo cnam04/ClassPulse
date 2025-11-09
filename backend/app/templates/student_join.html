@@ -4,21 +4,59 @@
   <meta charset="utf-8" />
   <title>Join Session</title>
   <style>
-    body { font-family: system-ui, Arial; display:grid; place-items:center; min-height:100vh; }
-    .card { padding: 24px; border: 1px solid #ddd; border-radius: 12px; width: 360px; }
-    input, button { width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid #ccc; margin-top: 8px; }
-    .err { color: #a00; margin-top: 8px; }
+    /* layout */
+    *{box-sizing:border-box}
+    body{margin:0; min-height:100vh; display:grid; place-items:center; font-family:system-ui, Arial}
+    .card{width:min(540px,92vw); padding:28px; border:1px solid #ddd; border-radius:16px; background:#fff}
+
+    /* tidy alignment */
+    h1{margin:0 0 16px; font-weight:700; font-size:2.25rem}
+    form{display:grid; gap:12px}
+    input, button{
+      width:100%; padding:12px 14px; border-radius:12px;
+      border:1px solid #ccc; font-size:1rem;
+    }
+    input{line-height:1.2}
+    button{cursor:pointer; background:#111; color:#fff; border-color:#111}
+    .err{color:#a00; margin-top:8px; font-weight:600}
+
+    /* animations */
+    @keyframes floatFade{
+      0%{opacity:0; transform:translateY(12px) scale(.98)}
+      60%{opacity:1; transform:translateY(0) scale(1)}
+      100%{opacity:1; transform:translateY(0) scale(1)}
+    }
+    :root{ --dur:1.1s; --delay-h1:.15s; --delay-card:.25s; --delay-fields:.45s }
+    .welcome{ opacity:0; animation:floatFade var(--dur) cubic-bezier(.22,.61,.36,1) var(--delay-h1) both }
+    .enter  { opacity:0; animation:floatFade var(--dur) cubic-bezier(.22,.61,.36,1) var(--delay-card) both }
+    .stagger>*{ opacity:0; animation:floatFade var(--dur) cubic-bezier(.22,.61,.36,1) var(--delay-fields) both }
+    .stagger>*+*{ animation-delay:calc(var(--delay-fields) + .12s) }
+
+    @media (prefers-reduced-motion:reduce){
+      .welcome,.enter,.stagger>*{animation:none!important; opacity:1}
+    }
   </style>
 </head>
 <body>
-  <div class="card">
-    <h1>Join a Session</h1>
-    <form method="post" action="/student/join">
-      <input name="code" placeholder="Enter 6-digit code" required />
+  <div class="card {% if not error %}enter{% endif %}">
+    <h1 class="{% if not error %}welcome{% endif %}">Join a Session</h1>
+
+    <form class="{% if not error %}stagger{% endif %}" method="post" action="/student/join">
+      <input
+        name="code"
+        placeholder="Enter 6-digit code"
+        inputmode="numeric"
+        pattern="\d{6}"
+        maxlength="6"
+        autocomplete="one-time-code"
+        aria-invalid="{{ 'true' if error else 'false' }}"
+        required
+      />
       <button type="submit">Join</button>
     </form>
+
     {% if error %}
-      <div class="err">{{ error }}</div>
+      <div class="err">Invalid Code</div>
     {% endif %}
   </div>
 </body>
