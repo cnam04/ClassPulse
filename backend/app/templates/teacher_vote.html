@@ -8,6 +8,11 @@
     :root{
       --fg:#111; --muted:#666; --border:#e5e7eb; --btn:#111; --btnfg:#fff;
       --dur:1.0s; --d1:.12s; --d2:.28s; --d3:.44s;
+
+      /* colors for the three “buttons” */
+      --red:#dc2626;      --red-bg:#fee2e2;
+      --yellow:#ca8a04;   --yellow-bg:#fef3c7;
+      --green:#16a34a;    --green-bg:#dcfce7;
     }
     *{ box-sizing:border-box }
     body{
@@ -52,10 +57,21 @@
     }
     .stat{
       border:1px solid var(--border); border-radius:14px; padding:16px; text-align:center;
-      background:#fff;
+      background:#fff; cursor:default;
     }
+    .stat:hover{ filter:brightness(.98); }
     .n{ font-size:2rem; font-weight:800; letter-spacing:.02em }
     .label{ color:var(--muted); margin-top:4px; font-weight:600 }
+
+    /* colored variants */
+    .stat.cf    { border-color: var(--red);    background: var(--red-bg); }
+    .stat.cf .n { color: var(--red); }
+
+    .stat.ss    { border-color: var(--yellow); background: var(--yellow-bg); }
+    .stat.ss .n { color: var(--yellow); }
+
+    .stat.nc    { border-color: var(--green);  background: var(--green-bg); }
+    .stat.nc .n { color: var(--green); }
 
     /* Animations */
     @keyframes floatFade{
@@ -72,7 +88,7 @@
   </style>
 </head>
 <body>
-  <!-- store code for JS without Jinja inside the script -->
+  <!-- code passed via data-attr so no Jinja inside JS -->
   <main id="state" class="wrap" data-code="{{ code }}">
     <h1 class="a-title">Session code: {{ code }}</h1>
 
@@ -86,15 +102,15 @@
     <p class="meta a-stats">Participants: <strong id="pcount">0</strong></p>
 
     <section class="grid a-stats">
-      <div class="stat">
+      <div class="stat cf">
         <div id="cf" class="n">0</div>
         <div class="label">Confused</div>
       </div>
-      <div class="stat">
+      <div class="stat ss">
         <div id="ss" class="n">0</div>
         <div class="label">So-so</div>
       </div>
-      <div class="stat">
+      <div class="stat nc">
         <div id="nc" class="n">0</div>
         <div class="label">Not Confused</div>
       </div>
@@ -104,12 +120,12 @@
   <script>
     const code = document.getElementById('state')?.dataset.code || '';
     const els = {
-      start: document.getElementById('start'),
-      timer: document.getElementById('timer'),
+      start:  document.getElementById('start'),
+      timer:  document.getElementById('timer'),
       pcount: document.getElementById('pcount'),
-      nc: document.getElementById('nc'),
-      ss: document.getElementById('ss'),
-      cf: document.getElementById('cf'),
+      nc:     document.getElementById('nc'),
+      ss:     document.getElementById('ss'),
+      cf:     document.getElementById('cf'),
     };
 
     els.start.addEventListener('submit', async () => {
@@ -130,7 +146,7 @@
         els.ss.textContent = d.soso ?? 0;
         els.cf.textContent = d.confused ?? 0;
 
-        const open = !!d.window_active;
+        const open   = !!d.window_active;
         const remain = d.window_seconds_remaining ?? 0;
         els.timer.textContent = open ? `Window: ${remain}s left` : 'Window: closed';
       }catch(_){}
