@@ -1,101 +1,36 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <title>Vote</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <style>
-    :root{
-      --fg:#111; --muted:#6b7280; --border:#e5e7eb;
-      --red:#fee2e2; --red-edge:#ef4444;
-      --amber:#fef3c7; --amber-edge:#d97706;
-      --green:#dcfce7; --green-edge:#16a34a;
-      --card:#fff; --shadow: 0 10px 30px rgba(0,0,0,.08);
-      --btn-shadow: 0 6px 18px rgba(0,0,0,.06);
-      --dur:.28s;
-    }
-    *{ box-sizing:border-box }
-    html,body{ height:100% }
-    body{
-      margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      color:var(--fg); background:#fafafa; display:grid; place-items:center; padding:24px;
-    }
-    .wrap{ width:min(980px,94vw); text-align:center; }
+<meta charset="utf-8" />
+<title>Vote</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  :root{--fg:#111;--muted:#6b7280;--border:#e5e7eb;--card:#fff}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif;color:var(--fg);background:#fafafa;display:grid;place-items:center;min-height:100vh;padding:16px}
+  .wrap{width:min(860px,94vw);text-align:center}
+  .title{font-size:clamp(26px,4.5vw,44px);font-weight:800;margin:6px 0}
+  .code{display:inline-block;margin-top:6px;font-size:clamp(16px,3vw,24px);background:#111;color:#fff;padding:6px 12px;border-radius:999px;letter-spacing:.12em}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px;margin-top:16px}
+  .subtitle{color:var(--muted);font-size:clamp(15px,2vw,20px);margin:0 0 10px}
+  .pill{display:inline-block;margin-bottom:12px;padding:6px 12px;border:1px solid var(--border);border-radius:999px;color:var(--muted);font-weight:600}
+  .hint{margin:10px 0 6px;color:var(--muted);font-weight:700}
+  .row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+  button.vote{appearance:none;border:1px solid var(--border);border-radius:12px;padding:16px 10px;font-size:16px;font-weight:700;background:#f3f4f6;cursor:pointer}
+  .count{font-size:28px;font-weight:800;display:block;margin-bottom:6px;opacity:.85}
+  .red{background:#fee2e2;border-color:#ef4444}.yellow{background:#fef3c7;border-color:#d97706}.green{background:#dcfce7;border-color:#16a34a}
+  #msg{margin-top:12px;min-height:1.2em;font-weight:600}
+  .ok{color:#16a34a}.warn{color:#b91c1c}
+  [hidden]{display:none!important}
 
-    /* Title */
-    .title{
-      font-size:clamp(28px,5vw,56px); font-weight:800; margin:10px 0 8px;
-      letter-spacing:.3px;
-    }
-    .code{
-      display:inline-block; margin-top:8px; font-size:clamp(18px,3.2vw,28px);
-      background:#111; color:#fff; padding:8px 16px; border-radius:999px;
-      letter-spacing:.12em; box-shadow:var(--shadow);
-      animation: pop .38s ease-out both;
-    }
-    .subtitle{
-      display:flex; align-items:center; justify-content:center; gap:10px;
-      color:var(--muted); font-size:clamp(16px,2.2vw,22px); margin:18px 0 24px;
-    }
-    .subtitle .icon{
-      width:26px; height:26px; display:inline-grid; place-items:center;
-      border-radius:50%; background:#111; color:#fff; font-size:14px;
-      translate:0 1px;
-    }
-
-    /* Card */
-    .card{
-      background:var(--card); border:1px solid var(--border); border-radius:18px;
-      padding:24px; box-shadow:var(--shadow); margin-inline:auto;
-    }
-
-    .row{
-      display:grid; grid-template-columns:repeat(3, minmax(0,1fr));
-      gap:16px; margin-top:8px;
-    }
-
-    button.vote{
-      appearance:none; border:1px solid var(--border); border-radius:16px;
-      padding:24px 14px; font-size:18px; font-weight:700; cursor:pointer;
-      background:#f3f4f6; transition: transform var(--dur) ease, box-shadow var(--dur) ease, filter var(--dur) ease;
-      box-shadow:var(--btn-shadow);
-    }
-    button.vote .count{ font-size:34px; font-weight:800; display:block; margin-bottom:8px; opacity:.85 }
-    button.vote.red{ background:var(--red); border-color:var(--red-edge) }
-    button.vote.yellow{ background:var(--amber); border-color:var(--amber-edge) }
-    button.vote.green{ background:var(--green); border-color:var(--green-edge) }
-
-    button.vote:hover{ transform: translateY(-2px) scale(1.02) }
-    button.vote:active{ transform: translateY(0) scale(.98) }
-
-    /* click pulse */
-    .pulse{ position:relative; overflow:hidden }
-    .pulse::after{
-      content:""; position:absolute; inset:auto; width:10px; height:10px; border-radius:999px;
-      background:rgba(255,255,255,.5); transform:translate(-50%,-50%) scale(1); opacity:0; pointer-events:none;
-    }
-    .pulse.pulsing::after{
-      animation: ripple .6s ease-out forwards;
-    }
-
-    /* Messages */
-    #msg{ margin-top:16px; min-height:1.4em; font-weight:600 }
-    .ok{ color:#16a34a }
-    .warn{ color:#b91c1c }
-
-    /* motion-safe */
-    @media (prefers-reduced-motion:no-preference){
-      @keyframes ripple{
-        from{ opacity:.65 }
-        to{ transform:translate(var(--rx), var(--ry)) scale(22); opacity:0 }
-      }
-      @keyframes pop{
-        from{ transform:translateY(6px) scale(.98); opacity:0 }
-        to{ transform:none; opacity:1 }
-      }
-      .card{ animation: pop .45s ease-out both }
-    }
-  </style>
+  /* Question card */
+  .qwrap{ margin-top:14px; text-align:left; }
+  .qcard{
+    border:1px solid var(--border); border-radius:12px; padding:14px; background:#fff;
+  }
+  .qtitle{ font-weight:800; margin:0 0 6px; color:#111; }
+  .qtext{ white-space:pre-wrap; color:#374151; }
+</style>
 </head>
 <body>
   <div class="wrap">
@@ -103,92 +38,148 @@
     <div class="code">{{ code }}</div>
 
     <div class="card" role="region" aria-labelledby="how-feel">
-      <div id="how-feel" class="subtitle">
-        <span>How do you feel?</span>
+      <div id="how-feel" class="subtitle">How do you feel?</div>
+
+      <!-- Teacher question (appears only if present) -->
+      <div id="qwrap" class="qwrap" hidden>
+        <div class="qcard">
+          <div class="qtitle">Question from your teacher</div>
+          <div id="qtext" class="qtext"></div>
+        </div>
       </div>
 
-      <div class="row">
-        <button class="vote red pulse" data-v="confused" aria-label="Confused">
-          <span class="count">😕</span>
-          Confused
-        </button>
-        <button class="vote yellow pulse" data-v="soso" aria-label="So-so">
-          <span class="count">😐</span>
-          So-so
-        </button>
-        <button class="vote green pulse" data-v="not_confused" aria-label="Not confused">
-          <span class="count">🙂</span>
-          Not confused
-        </button>
+      <!-- BEFORE the vote window opens -->
+      <div id="pre" class="hint">Please wait until your teacher calls the vote.</div>
+
+      <!-- ONLY visible WHILE the window is open -->
+      <div id="win" class="pill" hidden>Window: checking…</div>
+
+      <!-- Buttons appear only when vote window is open -->
+      <div id="controls" class="row" hidden>
+        <button class="vote red"    data-v="confused"><span class="count">😕</span>Confused</button>
+        <button class="vote yellow" data-v="soso"><span class="count">😐</span>So-so</button>
+        <button class="vote green"  data-v="not_confused"><span class="count">🙂</span>Not confused</button>
       </div>
 
       <div id="msg" aria-live="polite"></div>
     </div>
   </div>
 
-  <script>
-    const code = "{{ code }}";
-    const msg = document.getElementById('msg');
+<script>
+  const code="{{ code }}";
+  const msg=document.getElementById('msg');
+  const pre=document.getElementById('pre');
+  const win=document.getElementById('win');
+  const controls=document.getElementById('controls');
+  const buttons=[...controls.querySelectorAll('button.vote[data-v]')];
+  const qwrap=document.getElementById('qwrap');
+  const qtext=document.getElementById('qtext');
 
-    function getVoterId(){
-      let id = localStorage.getItem('voter_id');
-      if(!id){
-        id = ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g,c=>
-          (c^crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
-        );
-        localStorage.setItem('voter_id', id);
+  const ERROR_MS=2000, OK_MS=3000;
+
+  const showMsg=(kind,text,ms=0)=>{
+    clearTimeout(showMsg._t);
+    msg.className=kind||''; msg.textContent=text||'';
+    if(ms>0) showMsg._t=setTimeout(()=>{ msg.className=''; msg.textContent=''; }, ms);
+  };
+
+  // voter id + per-session voted flag
+  const getVoterId=()=>{
+    let id=localStorage.getItem('voter_id');
+    if(!id){
+      id=([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g,c=>(c^crypto.getRandomValues(new Uint8Array(1))[0]&15>>c/4).toString(16));
+      localStorage.setItem('voter_id',id);
+    }
+    return id;
+  };
+  const voterId=getVoterId();
+  const votedKey=`voted_${code}`;
+  const hasVoted=()=>localStorage.getItem(votedKey)==='1';
+  const markVoted=()=>localStorage.setItem(votedKey,'1');
+
+  let windowOpen=false;
+
+  function updateUI(){
+    if(windowOpen){
+      pre.hidden = true;
+      win.hidden = false;
+      controls.hidden = false;
+      const disable = hasVoted();
+      buttons.forEach(b=>b.disabled = disable);
+    }else{
+      pre.hidden = false;
+      win.hidden = true;
+      controls.hidden = true;
+      // don't clear question: teacher might leave question up between windows
+      msg.textContent = ''; msg.className = '';
+    }
+  }
+
+  async function fetchStats(){
+    try{
+      const res=await fetch(`/api/session/${code}/stats`);
+      if(!res.ok) throw 0;
+      const d=await res.json();
+      windowOpen = !!d.window_active;
+      const remain=d.window_seconds_remaining ?? 0;
+      if(windowOpen) win.textContent=`Window: ${remain}s left`;
+      updateUI();
+    }catch{}
+  }
+
+  // NEW: question polling
+  async function fetchQuestion(){
+    try{
+      const res=await fetch(`/api/session/${code}/question`);
+      if(!res.ok) throw 0;
+      const d=await res.json();                 // expects: { text: "..." } or { text: "" }
+      const t=(d?.text || '').trim();
+      if(t){
+        qtext.textContent = t;
+        qwrap.hidden = false;
+      }else{
+        qwrap.hidden = true;
+        qtext.textContent = '';
       }
-      return id;
+    }catch{
+      /* ignore */
     }
-    const voterId = getVoterId();
+  }
 
-    function ripple(e, btn){
-      const rect = btn.getBoundingClientRect();
-      btn.style.setProperty('--rx', (e.clientX - rect.left) + 'px');
-      btn.style.setProperty('--ry', (e.clientY - rect.top) + 'px');
-      btn.classList.remove('pulsing'); // restart
-      // force reflow
-      void btn.offsetWidth;
-      btn.classList.add('pulsing');
-      setTimeout(() => btn.classList.remove('pulsing'), 650);
-    }
+  async function sendVote(status){
+    const res=await fetch(`/api/session/${code}/vote`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({status, voter_id:voterId})
+    });
+    if(!res.ok) return {ok:false, reason:'Network error'};
+    return res.json();
+  }
 
-    async function sendVote(status){
-      const res = await fetch(`/api/session/${code}/vote`, {
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ status, voter_id: voterId })
-      });
-      if (!res.ok) return { ok:false, reason:'Network error' };
-      return res.json();
-    }
+  buttons.forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      if(!windowOpen){ showMsg('warn','Voting not open yet.',ERROR_MS); return; }
+      if(hasVoted()){  showMsg('warn','Vote already recorded.',ERROR_MS); return; }
+      buttons.forEach(b=>b.disabled=true);
+      showMsg('', 'Sending…');
+      try{
+        const data=await sendVote(btn.getAttribute('data-v'));
+        if(data.ok){ markVoted(); showMsg('ok','Vote recorded.',OK_MS); }
+        else if(data.reason==='already voted'){ markVoted(); showMsg('warn','Vote already recorded.',ERROR_MS); }
+        else if(data.reason==='closed'){ showMsg('warn','Voting not open yet.',ERROR_MS); }
+        else{ showMsg('warn', data.reason||'Vote not accepted.', ERROR_MS); }
+      }catch{
+        showMsg('warn','Network error',ERROR_MS);
+      }finally{
+        updateUI();
+      }
+    });
+  });
 
-    const buttons = document.querySelectorAll('button.vote[data-v]');
-    for (const btn of buttons){
-      btn.addEventListener('click', async (e) => {
-        ripple(e, btn);
-        const status = btn.getAttribute('data-v');
-        buttons.forEach(b=>b.disabled = true);
-        msg.className = ''; msg.textContent = 'Sending…';
-        try{
-          const data = await sendVote(status);
-          if (data.ok){
-            msg.className = 'ok'; msg.textContent = 'Vote recorded. Thanks!';
-          }else if (data.reason === 'already voted'){
-            msg.className = 'warn'; msg.textContent = 'Vote already recorded.';
-          }else if (data.reason === 'closed'){
-            msg.className = 'warn'; msg.textContent = 'Voting window is closed.';
-          }else{
-            msg.className = 'warn'; msg.textContent = data.reason || 'Vote not accepted.';
-          }
-        }catch(err){
-          msg.className = 'warn'; msg.textContent = 'Error sending vote.';
-        }finally{
-          // Allow changing the vote only if your backend permits; otherwise keep disabled.
-          buttons.forEach(b=>b.disabled = false);
-        }
-      });
-    }
-  </script>
+  // start polling
+  fetchStats(); fetchQuestion();
+  setInterval(fetchStats, 1000);
+  setInterval(fetchQuestion, 1000);
+</script>
 </body>
 </html>
