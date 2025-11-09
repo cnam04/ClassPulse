@@ -257,14 +257,18 @@
       setVoteUI(true);   // show immediately
       tickStats();
     });
+    // teacher types a new broadcast
     els.qsend.addEventListener('click', async () => {
-      const text = (els.qinput.value||'').trim(); if(!text) return;
-      try{
-        await fetch(`/api/session/${encodeURIComponent(code)}/question`,{
-          method:'POST', headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({ text, question:text })
-        }); els.qinput.value='';
-      }catch(_){}
+    const text = (els.qinput.value || '').trim();
+    if (!text) return;
+    try {
+        await fetch(`/api/session/${encodeURIComponent(code)}/question`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text })   // <- only text
+        });
+        els.qinput.value = '';
+    } catch {}
     });
     els.qclear.addEventListener('click', async () => {
       try{
@@ -343,10 +347,11 @@
             </div>`;
           div.querySelector('[data-a="broadcast"]').addEventListener('click', async ()=>{
             try{
-              await fetch(`/api/session/${encodeURIComponent(code)}/question`,{
-                method:'POST', headers:{'Content-Type':'application/json'},
-                body: JSON.stringify({ text: q.text })
-              });
+                await fetch(`/api/session/${encodeURIComponent(code)}/question`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: q.text, qid: q.id })  // <- include qid
+                });
             }catch(_){}
           });
           div.querySelector('[data-a="remove"]').addEventListener('click', async ()=>{

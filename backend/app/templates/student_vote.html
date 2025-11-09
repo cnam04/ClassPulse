@@ -44,6 +44,17 @@
   .poll .box{ background:#fff;border:1px solid var(--border);border-radius:14px;padding:14px }
   .poll .row2{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px }
   .poll button{ appearance:none;border:1px solid var(--border);border-radius:12px;padding:16px 10px;font-size:16px;font-weight:800;background:#f3f4f6;cursor:pointer }
+  /* Ask box */
+    .ask{ margin-top:14px; text-align:left; }
+    .row2{ display:grid; grid-template-columns:1fr auto; gap:10px; align-items:center }
+    #askInput{
+    border:1px solid var(--border); border-radius:12px; padding:12px; font-size:16px; width:100%;
+    background:#fff; color:var(--fg);
+    }
+    #askSend{
+    appearance:none; border:1px solid var(--border); border-radius:12px; padding:12px 16px;
+    font-size:16px; font-weight:800; background:#111; color:#fff; cursor:pointer;
+    }
 </style>
 </head>
 <body>
@@ -55,11 +66,21 @@
       <!-- Broadcast question from teacher -->
       <div id="qwrap" class="qwrap" hidden>
         <div class="qcard">
-          <div class="qtitle">Question from your teacher</div>
+          <div class="qtitle">Highlighted question:</div>
           <div id="qtext" class="qtext"></div>
         </div>
       </div>
-
+      <!-- Student Ask Box (appears only when teacher allows questions) -->
+        <div id="askBox" class="ask" hidden>
+        <div class="qcard">
+            <div class="qtitle">Ask your teacher</div>
+            <div class="row2">
+            <input id="askInput" type="text" placeholder="Type your question…" />
+            <button id="askSend" type="button">Send</button>
+            </div>
+            <div id="askHint" class="hint" style="min-height:1.2em"></div>
+        </div>
+        </div>
       <!-- Before window -->
       <div id="pre" class="hint">Pay attention!</div>
 
@@ -90,14 +111,7 @@
     </div>
   </div>
 
-  <!-- floating ask button (only visible when allowed) -->
-  <button id="fab" class="fab" hidden>
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-      <path stroke-width="2" d="M9 9h.01M15 9h.01M8 13a4 4 0 0 0 8 0" />
-      <circle cx="12" cy="12" r="9" stroke-width="2"/>
-    </svg>
-    Ask a question
-  </button>
+ 
 
 <script>
   // Session code
@@ -119,14 +133,18 @@
   const buttons=[...controls.querySelectorAll('button.vote[data-v]')];
   const qwrap=document.getElementById('qwrap');
   const qtext=document.getElementById('qtext');
-  const fab=document.getElementById('fab');
+ 
   // poll
   const pollBox=document.getElementById('poll');
   const pollTitle=document.getElementById('pollTitle');
   const pollMsg=document.getElementById('pollMsg');
   const btnYes=document.getElementById('btnYes');
   const btnNo=document.getElementById('btnNo');
-
+    // Ask UI
+    const askBox   = document.getElementById('askBox');
+    const askInput = document.getElementById('askInput');
+    const askSend  = document.getElementById('askSend');
+    const askHint  = document.getElementById('askHint');
   const ERROR_MS=2000, OK_MS=3000;
 
   function showMsg(kind,text,ms=0){
@@ -230,15 +248,56 @@ function markPolled(){ localStorage.setItem(currentPollKey, '1'); }
     }catch{}
   }
 
-  // Permission poll for showing the ask button
+  // Permission poll for showing the ask and question box
   async function fetchAskPermission(){
-    try{
-      const res=await fetch(`/api/session/${encodeURIComponent(code)}/qperm`, { headers:{'Accept':'application/json'} });
-      if(!res.ok){ fab.hidden = true; return; }
-      const d=await res.json();
-      fab.hidden = !Boolean(d?.allow);
-    }catch{ fab.hidden = true; }
+  try{
+    const res = await fetch(`/api/session/${encodeURIComponent(code)}/qperm`, { headers:{'Accept':'application/json'} });
+    if(!res.ok){ fab.hidden = true; if(askBox) askBox.hidden = true; return; }
+    const d = await res.json();
+    const allowed = !!(d?.allow);
+    // new inline ask box
+    if (askBox){
+      askBox.hidden = !allowed;
+      if (!allowed){ askInput.value = ''; askHint.textContent=''; }
+      else         { askInput.focus(); }
+    }
+  }catch{
+    fab.hidden = true;
+    if(askBox) askBox.hidden = true;
   }
+}
+
+    async function sendStudentQuestion(){
+        const text = (askInput.value || '').trim();
+        if(!text){
+            askHint.textContent = 'Please type a question first.';
+            return;
+        }
+        askSend.disabled = true;
+        askHint.textContent = 'Sending…';
+        try{
+            const r = await fetch(`/api/session/${encodeURIComponent(code)}/student_question`,{
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({ text, voter_id: voterId })
+            });
+            if(r.ok){
+            askInput.value = '';
+            askHint.textContent = 'Sent!';
+            setTimeout(()=> askHint.textContent = '', 1200);
+            }else{
+            askHint.textContent = 'Could not send question.';
+            }
+        }catch{
+            askHint.textContent = 'Network error.';
+        }finally{
+            askSend.disabled = false;
+        }
+     }
+
+if (askSend) askSend.addEventListener('click', sendStudentQuestion);
+if (askInput) askInput.addEventListener('keydown', (e)=>{
+  if(e.key === 'Enter'){ e.preventDefault(); sendStudentQuestion(); }
+});
 
   // Send vote (confusion)
   async function sendVote(status){
@@ -270,21 +329,6 @@ function markPolled(){ localStorage.setItem(currentPollKey, '1'); }
     });
   });
 
-  // Student ask flow
-  fab.addEventListener('click', async ()=>{
-    const text = (prompt('Ask your question (anonymous to teacher):') || '').trim();
-    if(!text) return;
-    try{
-      const res=await fetch(`/api/session/${encodeURIComponent(code)}/student_question`,{
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ text, voter_id: voterId })
-      });
-      if(res.ok){ showMsg('ok','Question sent!', OK_MS); }
-      else{ showMsg('warn','Could not send question.', ERROR_MS); }
-    }catch{
-      showMsg('warn','Network error.', ERROR_MS);
-    }
-  });
 
   // POLL — show/hide and vote
   async function fetchPoll(){

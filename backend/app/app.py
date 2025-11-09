@@ -16,29 +16,38 @@ lock = Lock()
 # ------- Session Storage -------- #
 r = redis.from_url(os.environ["REDIS_URL"], decode_responses=True)
 
+# ------ Voting Keys--------- #
 def K_votes(code): return f"session:{code}:votes"    # HASH: {not_confused, soso, confused}
-def K_meta(code):  return f"session:{code}:meta"     # HASH: {locked, participants, window_active, window_expires_at}
+def K_meta(code): return f"session:{code}:meta"     # HASH: {locked, participants, window_active, window_expires_at}
 def K_voted(code): return f"session:{code}:voted"    # SET:  voter_id who already voted this window
 
 # ------ Polling Keys--------- #
 def K_poll(code): return f"session:{code}:poll"      # HASH: {active, question, yes, no, poll_id}
-def K_poll_voted(code):  return f"session:{code}:poll_voted" # SET: voter_ids who voted this poll
+def K_poll_voted(code): return f"session:{code}:poll_voted" # SET: voter_ids who voted this poll
 
+# --- Student-questions keys ---
+def K_qperm(code): return f"session:{code}:qperm"       # STRING "0|1"
+def K_qseq(code): return f"session:{code}:q:seq"       # COUNTER for question ids
+def K_qindex(code): return f"session:{code}:q:index"     # LIST of qids (FIFO)
+# Voter ID is anonymous to the teacher. it is stored to keep track of votes.
+def K_qhash(code,qid): return f"session:{code}:q:{qid}"  # HASH: {id, text, ts, voter_id}
+
+# --- Teacher-question keys ---
+def K_broadcast(code): return f"session:{code}:broadcast" # String text
+def K_broadcast_qid(code): return f"session:{code}:broadcast_qid"    # STRING qid or ''
 
 def session_exists(code: str) -> bool:
     # exists if meta hash is present
     return r.exists(K_meta(code)) == 1
 
 
-
+# ------- Session -------- #
 def gen_code():
     return ''.join(choice(ascii_uppercase) for _ in range(8))
 
 
 def empty_counts():
     return {"not_confused": 0, "confused": 0, "soso": 0}
-
-
 
 def create_session() -> str:
     # generate unique code and initialize all structures
@@ -85,6 +94,7 @@ def _window_state(code):
         active = False
     return active, remaining
 
+# ------ Voting--------- #
 def record_vote(code, status, voter_id):
     # one vote per window; accept outside of a window if you want—here we enforce only within/while open
     if not voter_id:
@@ -119,6 +129,7 @@ def read_stats(code):
         "window_id":    int(meta.get("window_id", 0))
     }
 
+# ------ Polling--------- #
 def poll_start(code, question=""):
     # bump poll_id and (re)initialize counts; clear voted set
     pipe = r.pipeline()
@@ -156,6 +167,51 @@ def poll_read(code):
         "no": int(h.get("no", 0)),
         "poll_id": int(h.get("poll_id", 0)),
     }
+
+# ------ Student Questions--------- #
+def set_qperm(code, allow: bool):
+    r.set(K_qperm(code), "1" if allow else "0")
+
+def get_qperm(code) -> bool:
+    return (r.get(K_qperm(code)) or "0") == "1"
+
+def add_student_question(code, text, voter_id):
+    qid = r.incr(K_qseq(code))
+    ts  = int(time())
+    pipe = r.pipeline()
+    pipe.hset(K_qhash(code, qid), mapping={
+        "id": qid, "text": text, "ts": ts, "voter_id": voter_id or ""
+    })
+    pipe.rpush(K_qindex(code), qid)     # lol #CS2
+    pipe.execute()
+    return {"id": qid, "text": text, "ts": ts}
+
+def list_student_questions(code):
+    qids = [int(x) for x in r.lrange(K_qindex(code), 0, -1)]
+    if not qids:
+        return []
+    pipe = r.pipeline()
+    for qid in qids:
+        pipe.hgetall(K_qhash(code, qid))
+    rows = pipe.execute()
+    # Normalize + keep only existing
+    out = []
+    for row in rows:
+        if not row: 
+            continue
+        out.append({
+            "id": int(row.get("id", 0)),
+            "text": row.get("text", ""),
+            "ts": int(row.get("ts", 0))
+        })
+    return out
+
+def delete_student_question(code, qid: int):
+    pipe = r.pipeline()
+    pipe.lrem(K_qindex(code), 0, str(qid))
+    pipe.delete(K_qhash(code, qid))
+    pipe.execute()
+
 # ----------- PAGES -------------------- #
 @app.route("/")
 def index():
@@ -252,6 +308,7 @@ def api_vote(code):
         return jsonify({"ok": False, "reason": reason}), http
     return jsonify({"ok": True})
 
+#------Polling--------
 @app.post("/api/session/<code>/poll/start")
 def api_poll_start(code):
     q = (request.json or {}).get("question", "")
@@ -281,6 +338,94 @@ def api_poll_vote(code):
     if not ok:
         http = 409 if reason=="already voted" else 403 if reason=="not active" else 400
         return jsonify({"ok": False, "reason": reason}), http
+    return jsonify({"ok": True})
+
+#------Questions--------
+
+@app.get("/api/session/<code>/question")
+def api_get_broadcast(code):
+    if not session_exists(code):
+        return jsonify({"error": "session not found"}), 404
+    text = r.get(K_broadcast(code)) or ""
+    qid  = r.get(K_broadcast_qid(code)) or ""
+    return jsonify({"text": text, "qid": int(qid) if qid.isdigit() else None})
+
+@app.post("/api/session/<code>/question")
+def api_set_broadcast(code):
+    if not session_exists(code):
+        return jsonify({"error": "session not found"}), 404
+    payload = request.get_json(silent=True) or {}
+    text = (payload.get("text") or "").strip()
+    qid  = payload.get("qid")
+    pipe = r.pipeline()
+    pipe.set(K_broadcast(code), text)
+    if qid is None or text == "":
+        pipe.delete(K_broadcast_qid(code))
+    else:
+        try:
+            pipe.set(K_broadcast_qid(code), int(qid))
+        except Exception:
+            pipe.delete(K_broadcast_qid(code))
+    pipe.execute()
+    return jsonify({"ok": True})
+
+@app.get("/api/session/<code>/qperm")
+def api_qperm_get(code):
+    if not session_exists(code):
+        return jsonify({"error": "session not found"}), 404
+    return jsonify({"allow": get_qperm(code)})
+
+@app.post("/api/session/<code>/qperm")
+def api_qperm_set(code):
+    if not session_exists(code):
+        return jsonify({"error": "session not found"}), 404
+    payload = request.get_json(silent=True) or {}
+    allow = bool(payload.get("allow"))
+    set_qperm(code, allow)
+    return jsonify({"ok": True, "allow": allow})
+
+
+@app.post("/api/session/<code>/student_question")
+def api_student_question(code):
+    if not session_exists(code):
+        return jsonify({"error": "session not found"}), 404
+    if not get_qperm(code):
+        return jsonify({"error": "questions disabled"}), 403
+
+    payload = request.get_json(silent=True) or {}
+    text = (payload.get("text") or "").strip()
+    voter_id = (payload.get("voter_id") or "").strip()
+    if not text:
+        return jsonify({"error": "empty"}), 400
+
+    q = add_student_question(code, text, voter_id)
+
+    # trims inbox to last n
+    r.ltrim(K_qindex(code), -200, -1)
+    return jsonify({"ok": True, "id": q["id"], "ts": q["ts"]})
+
+
+@app.get("/api/session/<code>/student_questions")
+def api_student_questions_list(code):
+    if not session_exists(code):
+        return jsonify({"error": "session not found"}), 404
+    return jsonify(list_student_questions(code))
+
+@app.delete("/api/session/<code>/student_questions/<int:qid>")
+def api_student_questions_delete(code, qid):
+    if not session_exists(code):
+        return jsonify({"error": "session not found"}), 404
+
+    # If the broadcast was showing this qid, clear it
+    b_qid = r.get(K_broadcast_qid(code))
+    if b_qid and b_qid.isdigit() and int(b_qid) == qid:
+        pipe = r.pipeline()
+        pipe.delete(K_broadcast(code))
+        pipe.delete(K_broadcast_qid(code))
+        pipe.execute()
+
+    # Remove from inbox
+    delete_student_question(code, qid)
     return jsonify({"ok": True})
 
 if __name__ == "__main__":
