@@ -1,27 +1,129 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8" />
   <title>Vote</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    body { font-family: system-ui, Arial; display:grid; place-items:center; min-height:100vh; }
-    .card { padding: 24px; border: 1px solid #ddd; border-radius: 12px; width: 420px; text-align: center; }
-    .row { display: flex; gap: 8px; margin-top: 12px; }
-    button { flex: 1; padding: 12px 10px; border-radius: 10px; border: 1px solid #ccc; }
-    .ok { color: #0a0; margin-top: 10px; }
-    .warn { color: #a00; margin-top: 10px; }
+    :root{
+      --fg:#111; --muted:#6b7280; --border:#e5e7eb;
+      --red:#fee2e2; --red-edge:#ef4444;
+      --amber:#fef3c7; --amber-edge:#d97706;
+      --green:#dcfce7; --green-edge:#16a34a;
+      --card:#fff; --shadow: 0 10px 30px rgba(0,0,0,.08);
+      --btn-shadow: 0 6px 18px rgba(0,0,0,.06);
+      --dur:.28s;
+    }
+    *{ box-sizing:border-box }
+    html,body{ height:100% }
+    body{
+      margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      color:var(--fg); background:#fafafa; display:grid; place-items:center; padding:24px;
+    }
+    .wrap{ width:min(980px,94vw); text-align:center; }
+
+    /* Title */
+    .title{
+      font-size:clamp(28px,5vw,56px); font-weight:800; margin:10px 0 8px;
+      letter-spacing:.3px;
+    }
+    .code{
+      display:inline-block; margin-top:8px; font-size:clamp(18px,3.2vw,28px);
+      background:#111; color:#fff; padding:8px 16px; border-radius:999px;
+      letter-spacing:.12em; box-shadow:var(--shadow);
+      animation: pop .38s ease-out both;
+    }
+    .subtitle{
+      display:flex; align-items:center; justify-content:center; gap:10px;
+      color:var(--muted); font-size:clamp(16px,2.2vw,22px); margin:18px 0 24px;
+    }
+    .subtitle .icon{
+      width:26px; height:26px; display:inline-grid; place-items:center;
+      border-radius:50%; background:#111; color:#fff; font-size:14px;
+      translate:0 1px;
+    }
+
+    /* Card */
+    .card{
+      background:var(--card); border:1px solid var(--border); border-radius:18px;
+      padding:24px; box-shadow:var(--shadow); margin-inline:auto;
+    }
+
+    .row{
+      display:grid; grid-template-columns:repeat(3, minmax(0,1fr));
+      gap:16px; margin-top:8px;
+    }
+
+    button.vote{
+      appearance:none; border:1px solid var(--border); border-radius:16px;
+      padding:24px 14px; font-size:18px; font-weight:700; cursor:pointer;
+      background:#f3f4f6; transition: transform var(--dur) ease, box-shadow var(--dur) ease, filter var(--dur) ease;
+      box-shadow:var(--btn-shadow);
+    }
+    button.vote .count{ font-size:34px; font-weight:800; display:block; margin-bottom:8px; opacity:.85 }
+    button.vote.red{ background:var(--red); border-color:var(--red-edge) }
+    button.vote.yellow{ background:var(--amber); border-color:var(--amber-edge) }
+    button.vote.green{ background:var(--green); border-color:var(--green-edge) }
+
+    button.vote:hover{ transform: translateY(-2px) scale(1.02) }
+    button.vote:active{ transform: translateY(0) scale(.98) }
+
+    /* click pulse */
+    .pulse{ position:relative; overflow:hidden }
+    .pulse::after{
+      content:""; position:absolute; inset:auto; width:10px; height:10px; border-radius:999px;
+      background:rgba(255,255,255,.5); transform:translate(-50%,-50%) scale(1); opacity:0; pointer-events:none;
+    }
+    .pulse.pulsing::after{
+      animation: ripple .6s ease-out forwards;
+    }
+
+    /* Messages */
+    #msg{ margin-top:16px; min-height:1.4em; font-weight:600 }
+    .ok{ color:#16a34a }
+    .warn{ color:#b91c1c }
+
+    /* motion-safe */
+    @media (prefers-reduced-motion:no-preference){
+      @keyframes ripple{
+        from{ opacity:.65 }
+        to{ transform:translate(var(--rx), var(--ry)) scale(22); opacity:0 }
+      }
+      @keyframes pop{
+        from{ transform:translateY(6px) scale(.98); opacity:0 }
+        to{ transform:none; opacity:1 }
+      }
+      .card{ animation: pop .45s ease-out both }
+    }
   </style>
 </head>
 <body>
-  <div class="card">
-    <h1>Session {{ code }}</h1>
-    <p>When the teacher calls a vote, tap one option below:</p>
-    <div class="row">
-      <button data-v="not_confused">Not confused</button>
-      <button data-v="soso">So-so</button>
-      <button data-v="confused">Confused</button>
+  <div class="wrap">
+    <div class="title">Session code:</div>
+    <div class="code">{{ code }}</div>
+
+    <div class="card" role="region" aria-labelledby="how-feel">
+      <div id="how-feel" class="subtitle">
+        <span>How do you feel?</span>
+      </div>
+
+      <div class="row">
+        <button class="vote red pulse" data-v="confused" aria-label="Confused">
+          <span class="count">😕</span>
+          Confused
+        </button>
+        <button class="vote yellow pulse" data-v="soso" aria-label="So-so">
+          <span class="count">😐</span>
+          So-so
+        </button>
+        <button class="vote green pulse" data-v="not_confused" aria-label="Not confused">
+          <span class="count">🙂</span>
+          Not confused
+        </button>
+      </div>
+
+      <div id="msg" aria-live="polite"></div>
     </div>
-    <div id="msg"></div>
   </div>
 
   <script>
@@ -29,38 +131,62 @@
     const msg = document.getElementById('msg');
 
     function getVoterId(){
-        let id = localStorage.getItem('voter_id');
-        if(!id){
-            id = ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g,c=>
-                (c^crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
-            );
-            localStorage.setItem('voter_id',id);
-        }
-        return id;
+      let id = localStorage.getItem('voter_id');
+      if(!id){
+        id = ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g,c=>
+          (c^crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+        );
+        localStorage.setItem('voter_id', id);
+      }
+      return id;
     }
     const voterId = getVoterId();
-    for (const btn of document.querySelectorAll('button[data-v]')) {
-      btn.addEventListener('click', async () => {
+
+    function ripple(e, btn){
+      const rect = btn.getBoundingClientRect();
+      btn.style.setProperty('--rx', (e.clientX - rect.left) + 'px');
+      btn.style.setProperty('--ry', (e.clientY - rect.top) + 'px');
+      btn.classList.remove('pulsing'); // restart
+      // force reflow
+      void btn.offsetWidth;
+      btn.classList.add('pulsing');
+      setTimeout(() => btn.classList.remove('pulsing'), 650);
+    }
+
+    async function sendVote(status){
+      const res = await fetch(`/api/session/${code}/vote`, {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ status, voter_id: voterId })
+      });
+      if (!res.ok) return { ok:false, reason:'Network error' };
+      return res.json();
+    }
+
+    const buttons = document.querySelectorAll('button.vote[data-v]');
+    for (const btn of buttons){
+      btn.addEventListener('click', async (e) => {
+        ripple(e, btn);
         const status = btn.getAttribute('data-v');
-        const res = await fetch(`/api/session/${code}/vote`, {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({ status, voter_id: voterId })
-        });
-        let txt = 'Error sending vote. Vote already recorded', cls = 'warn';
-        if (res.ok) {
-          const data = await res.json();
-          if (data.ok) {
-            txt = 'Vote recorded. Thanks!'; cls = 'ok';
-            
-          } else if (data.reason === 'already voted'){
-            txt = 'Voting window is closed.';cls='warn';
-          } else{
-            txt = data.reason || 'Vote not accepted.';cls='warn';
+        buttons.forEach(b=>b.disabled = true);
+        msg.className = ''; msg.textContent = 'Sending…';
+        try{
+          const data = await sendVote(status);
+          if (data.ok){
+            msg.className = 'ok'; msg.textContent = 'Vote recorded. Thanks!';
+          }else if (data.reason === 'already voted'){
+            msg.className = 'warn'; msg.textContent = 'Vote already recorded.';
+          }else if (data.reason === 'closed'){
+            msg.className = 'warn'; msg.textContent = 'Voting window is closed.';
+          }else{
+            msg.className = 'warn'; msg.textContent = data.reason || 'Vote not accepted.';
           }
-        } 
-        msg.className = cls;
-        msg.textContent = txt;   
+        }catch(err){
+          msg.className = 'warn'; msg.textContent = 'Error sending vote.';
+        }finally{
+          // Allow changing the vote only if your backend permits; otherwise keep disabled.
+          buttons.forEach(b=>b.disabled = false);
+        }
       });
     }
   </script>
