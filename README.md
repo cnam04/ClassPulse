@@ -6,7 +6,7 @@ Quick classroom pulse-check tool built at a hackathon. Teachers create a session
 - Start **yes/no polls** with per-poll revoting and results  
 - **Broadcast a question** to all students (clears/hides on reset)  
 - Let students **ask anonymous questions** (teacher inbox with broadcast/remove)  
-- Collect **short discussion answers** to a broadcast question
+
 
 > **Important:** Review code on the **`final`** branch (not `main`).
 
