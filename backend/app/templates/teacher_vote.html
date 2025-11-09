@@ -7,17 +7,11 @@
   <style>
     :root{
       --fg:#111; --muted:#666; --border:#e5e7eb; --btn:#111; --btnfg:#fff;
-
       --red:#dc2626;    --red-bg:#fee2e2;
-
-      /* ✅ Brighter, true yellow (not amber) */
-      --yellow:#facc15; --yellow-bg:#fef9c3;
-
+      --yellow:#facc15; --yellow-bg:#fef9c3;     /* bright yellow */
       --green:#16a34a;  --green-bg:#dcfce7;
-
       --radius:18px; --shadow:0 10px 30px rgba(0,0,0,.08);
     }
-
     *{ box-sizing:border-box }
     body{
       margin:0; min-height:100vh; display:grid; place-items:center; background:#fff;
@@ -27,10 +21,9 @@
     h1{ margin:0 0 14px; text-align:center; font-size:2rem; font-weight:800 }
     h1::after{ content:""; display:block; width:56px; height:4px; border-radius:3px; background:var(--fg); margin:10px auto 0 }
 
-    .row{ display:grid; grid-template-columns: 1fr auto; gap:14px; align-items:start; margin-top:10px }
-    @media (max-width:820px){ .row{ grid-template-columns:1fr } }
-
+    .row{ display:grid; grid-template-columns: 1fr; gap:14px; align-items:start; margin-top:10px }
     .stack{ display:grid; gap:10px }
+
     button{
       appearance:none; padding:14px 16px; border-radius:14px; border:1px solid var(--btn);
       background:var(--btn); color:var(--btnfg); font-weight:800; cursor:pointer; box-shadow:var(--shadow)
@@ -52,7 +45,10 @@
     .ss{ border-color:var(--yellow); background:var(--yellow-bg) }
     .nc{ border-color:var(--green);  background:var(--green-bg) }
 
-    .panel{ border:1px solid var(--border); border-radius:14px; background:#fff; padding:14px; }
+    .panel{
+      border:1px solid var(--border); border-radius:14px; background:#fff; padding:14px;
+      box-shadow:0 10px 30px rgba(0,0,0,.03);
+    }
     .panel h2{ margin:0 0 8px; font-size:1.05rem }
     .row2{ display:grid; grid-template-columns: 1fr auto; gap:10px; align-items:center }
     input[type="text"]{ border:1px solid var(--border); border-radius:10px; padding:10px 12px; font-size:16px; width:100% }
@@ -69,27 +65,34 @@
     .qmeta{ color:var(--muted); font-size:.88rem; margin-top:6px }
     .qactions{ display:flex; gap:8px; margin-top:8px }
 
-    /* Chart (shown only during active vote) */
+    /* Chart (only during active vote) */
     .chart{ margin-top:14px; border:1px solid var(--border); border-radius:14px; background:#fff; padding:14px; }
     .chart h2{ margin:0 0 8px; font-size:1.05rem }
     .bars{ display:grid; grid-template-columns: repeat(3, 1fr); gap:14px; align-items:end; height:180px; padding:6px 4px 0; }
     .bar{ position:relative; border-radius:10px 10px 6px 6px; min-height:4px; display:flex; align-items:flex-end; justify-content:center; transition:height .25s ease; }
     .bar .val{ position:absolute; top:-22px; font-weight:800; font-size:14px; color:#111; }
     .bar.red{    background:var(--red);    border:1px solid var(--red); }
-
-    /* ✅ Much more yellow for “So-so” column */
     .bar.yellow{ background:#fde047; border:1px solid #eab308; }
-
     .bar.green{  background:var(--green);  border:1px solid var(--green); }
     .xlabel{ text-align:center; margin-top:6px; font-weight:700; color:#555; font-size:14px; }
 
     /* Poll */
-    .poll{ border:1px solid var(--border); border-radius:14px; background:#fff; padding:14px; margin-top:14px; }
-    .poll h2{ margin:0 0 8px; font-size:1.05rem }
     .poll-row{ display:grid; grid-template-columns: auto 1fr auto; gap:8px; align-items:center; }
     .badge{ display:inline-block; border:1px solid var(--border); border-radius:999px; padding:6px 10px; font-weight:700; color:#555; background:#fff; }
-    .pbar-wrap{ border:1px solid var(--border); border-radius:999px; overflow:hidden; height:16px; }
-    .pbar{ height:100%; background:#16a34a; width:0% }
+
+    /* Gradient track + average marker */
+    .pbar-wrap{
+      position:relative; height:16px; border:1px solid var(--border); border-radius:999px; overflow:hidden;
+      background: linear-gradient(90deg, var(--green) 0%, var(--yellow) 50%, var(--red) 100%);
+    }
+    .avg-marker{
+      position:absolute; top:-4px; width:2px; height:24px; background:#111; border-radius:2px;
+      transform:translateX(-1px); box-shadow:0 0 0 2px rgba(255,255,255,.9);
+    }
+    .avg-marker::after{
+      content:""; position:absolute; top:2px; left:-4px; width:10px; height:10px; border-radius:50%;
+      background:#fff; border:2px solid #111;
+    }
   </style>
 </head>
 <body>
@@ -98,10 +101,39 @@
 
     <section class="row">
       <div class="stack">
-        <!-- Vote window -->
-        <form id="start" onsubmit="return false;">
-          <button type="submit">Call 60-second Vote</button>
-        </form>
+
+        <!-- VOTE PANEL -->
+        <div class="panel">
+          <h2>Live Vote</h2>
+          <form id="start" onsubmit="return false;">
+            <button type="submit">Call 60-second Vote</button>
+          </form>
+
+          <!-- Visible only while vote is active -->
+          <div id="voteBlock" hidden>
+            <div id="timer" class="pill" aria-live="polite" style="margin-top:10px">Window: closed</div>
+            <p class="meta">Participants: <strong id="pcount">0</strong></p>
+            <section class="grid">
+              <div class="stat cf"><div id="cf" class="n">0</div><div class="label">Confused</div></div>
+              <div class="stat ss"><div id="ss" class="n">0</div><div class="label">So-so</div></div>
+              <div class="stat nc"><div id="nc" class="n">0</div><div class="label">Not Confused</div></div>
+            </section>
+
+            <div class="chart" aria-labelledby="chart-title">
+              <h2 id="chart-title">Live Vote Results</h2>
+              <div class="bars">
+                <div class="bar red"    id="bar-cf" style="height:4px"><span class="val" id="val-cf">0</span></div>
+                <div class="bar yellow" id="bar-ss" style="height:4px"><span class="val" id="val-ss">0</span></div>
+                <div class="bar green"  id="bar-nc" style="height:4px"><span class="val" id="val-nc">0</span></div>
+              </div>
+              <div class="grid" style="grid-template-columns: repeat(3, 1fr); gap:14px; margin-top:2px">
+                <div class="xlabel">Confused</div>
+                <div class="xlabel">So-so</div>
+                <div class="xlabel">Not Confused</div>
+              </div>
+            </div>
+          </div>
+        </div>
 
         <!-- Broadcast question -->
         <div class="panel" aria-labelledby="qlab">
@@ -115,7 +147,7 @@
           </div>
         </div>
 
-        <!-- Student Questions (toggle + inbox) -->
+        <!-- Student Questions -->
         <div class="panel">
           <h2>Student Questions</h2>
           <label class="switch">
@@ -126,34 +158,8 @@
           <div class="qlist" id="qlist"></div>
         </div>
 
-        <!-- Visible only while vote is active -->
-        <div id="voteBlock" hidden>
-          <div id="timer" class="pill" aria-live="polite">Window: closed</div>
-
-          <p class="meta">Participants: <strong id="pcount">0</strong></p>
-          <section class="grid">
-            <div class="stat cf"><div id="cf" class="n">0</div><div class="label">Confused</div></div>
-            <div class="stat ss"><div id="ss" class="n">0</div><div class="label">So-so</div></div>
-            <div class="stat nc"><div id="nc" class="n">0</div><div class="label">Not Confused</div></div>
-          </section>
-
-          <div class="chart" aria-labelledby="chart-title">
-            <h2 id="chart-title">Live Vote Results</h2>
-            <div class="bars">
-              <div class="bar red"    id="bar-cf" style="height:4px"><span class="val" id="val-cf">0</span></div>
-              <div class="bar yellow" id="bar-ss" style="height:4px"><span class="val" id="val-ss">0</span></div>
-              <div class="bar green"  id="bar-nc" style="height:4px"><span class="val" id="val-nc">0</span></div>
-            </div>
-            <div class="grid" style="grid-template-columns: repeat(3, 1fr); gap:14px; margin-top:2px">
-              <div class="xlabel">Confused</div>
-              <div class="xlabel">So-so</div>
-              <div class="xlabel">Not Confused</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Poll controls & results -->
-        <div class="poll">
+        <!-- Poll -->
+        <div class="panel">
           <h2>Poll</h2>
           <div class="row2">
             <input id="pollq" type="text" placeholder="Poll question (optional)…" />
@@ -165,17 +171,24 @@
 
           <div id="pollLive" style="margin-top:12px">
             <div class="meta" id="pollStatus" style="margin:0">Poll is not running.</div>
-            <div class="poll-row" style="margin-top:8px">
-              <span class="badge">Yes: <span id="yesCount">0</span></span>
-              <div class="pbar-wrap"><div id="pbarYes" class="pbar"></div></div>
-              <span class="badge">No: <span id="noCount">0</span></span>
+
+            <!-- Hidden until poll is active -->
+            <div id="pollResults" hidden>
+              <div class="poll-row" style="margin-top:8px">
+                <span class="badge">Yes: <span id="yesCount">0</span></span>
+                <div class="pbar-wrap" aria-label="Class average position">
+                  <div id="avgMarker" class="avg-marker" title="Class average"></div>
+                </div>
+                <span class="badge">No: <span id="noCount">0</span></span>
+              </div>
+              <div class="meta" style="margin-top:6px">
+                Average Yes: <span id="avgPct">0</span>% · Total: <span id="pollTotal">0</span>
+              </div>
             </div>
-            <div class="meta" style="margin-top:6px">Total: <span id="pollTotal">0</span></div>
           </div>
         </div>
-      </div>
 
-      <div></div>
+      </div>
     </section>
   </main>
 
@@ -213,14 +226,16 @@
       valSS:  document.getElementById('val-ss'),
       valNC:  document.getElementById('val-nc'),
       // Poll
-      pollQ:      document.getElementById('pollq'),
-      pollStart:  document.getElementById('pollStart'),
-      pollStop:   document.getElementById('pollStop'),
-      pollStatus: document.getElementById('pollStatus'),
-      yesCount:   document.getElementById('yesCount'),
-      noCount:    document.getElementById('noCount'),
-      pollTotal:  document.getElementById('pollTotal'),
-      pbarYes:    document.getElementById('pbarYes'),
+      pollQ:       document.getElementById('pollq'),
+      pollStart:   document.getElementById('pollStart'),
+      pollStop:    document.getElementById('pollStop'),
+      pollStatus:  document.getElementById('pollStatus'),
+      pollResults: document.getElementById('pollResults'),
+      yesCount:    document.getElementById('yesCount'),
+      noCount:     document.getElementById('noCount'),
+      pollTotal:   document.getElementById('pollTotal'),
+      avgPct:      document.getElementById('avgPct'),
+      avgMarker:   document.getElementById('avgMarker'),
     };
 
     // Helpers
@@ -233,21 +248,46 @@
       els.barSS.style.height = hBar(b,max)+'px';
       els.barNC.style.height = hBar(c,max)+'px';
     }
+
+    // Gradient poll + average marker
     function renderPoll(p){
       const active = !!p?.active;
       els.pollStatus.textContent = active
         ? (p?.question ? `Poll running: “${p.question}”` : 'Poll running')
         : 'Poll is not running.';
+      els.pollResults.hidden = !active;
+
       const yes = Number(p?.yes||0), no = Number(p?.no||0);
       const tot = Math.max(0, yes+no);
-      els.yesCount.textContent = yes; els.noCount.textContent = no; els.pollTotal.textContent = tot;
-      els.pbarYes.style.width = (tot ? Math.round((yes/tot)*100) : 0)+'%';
+      const pctYes = tot ? Math.round((yes/tot)*100) : 0;
+
+      // Counts + average text
+      els.yesCount.textContent = active ? yes : 0;
+      els.noCount.textContent  = active ? no  : 0;
+      els.pollTotal.textContent = active ? tot : 0;
+      els.avgPct.textContent = active ? pctYes : 0;
+
+      // Marker position (hide if not active or no votes)
+      if(active && tot){
+        els.avgMarker.style.left = pctYes + '%';
+        els.avgMarker.title = `Average Yes: ${pctYes}%`;
+        els.avgMarker.hidden = false;
+      }else{
+        els.avgMarker.hidden = true;
+      }
+
+      // Button states
+      if(document.activeElement !== els.pollStart){
+        els.pollStart.disabled = active;
+      }
+      els.pollStop.disabled  = !active;
+      els.pollQ.disabled     = active;
     }
 
     // Actions
     els.start.addEventListener('submit', async () => {
       try{ await fetch(`/api/session/${encodeURIComponent(code)}/start_window`, { method:'POST' }); }catch(_){}
-      setVoteUI(true);   // show immediately
+      setVoteUI(true);
       tickStats();
     });
     els.qsend.addEventListener('click', async () => {
