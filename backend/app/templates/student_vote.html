@@ -98,6 +98,8 @@
   const markVoted=()=>localStorage.setItem(votedKey,'1');
 
   let windowOpen=false;
+  let lastOpen = false;
+  let lastWindowId=0;
 
   function updateUI(){
     if(windowOpen){
@@ -117,13 +119,28 @@
 
   async function fetchStats(){
     try{
-      const res=await fetch(`/api/session/${code}/stats`);
-      if(!res.ok) throw 0;
-      const d=await res.json();
-      windowOpen = !!d.window_active;
-      const remain=d.window_seconds_remaining ?? 0;
-      if(windowOpen) win.textContent=`Window: ${remain}s left`;
-      updateUI();
+        const res = await fetch(`/api/session/${code}/stats`, { cache: 'no-store' });
+        if(!res.ok) throw 0;
+        const d = await res.json();
+
+        const open   = !!d.window_active;
+        const remain = d.window_seconds_remaining ?? 0;
+
+        // new window even if there was an old one
+        if (typeof d.window_id === 'number' && d.window_id !== lastWindowId) {
+            localStorage.removeItem(votedKey);   // allow voting again this round
+            msg.textContent = '';
+            msg.className   = '';
+            lastWindowId = d.window_id;
+        }
+        // if window just closed, buttons will hide via updateUI()
+
+        lastOpen  = open;
+        windowOpen = open;
+
+        if (windowOpen) win.textContent = `Window: ${remain}s left`;
+
+        updateUI();
     }catch{}
   }
 
@@ -166,7 +183,7 @@
         const data=await sendVote(btn.getAttribute('data-v'));
         if(data.ok){ markVoted(); showMsg('ok','Vote recorded.',OK_MS); }
         else if(data.reason==='already voted'){ markVoted(); showMsg('warn','Vote already recorded.',ERROR_MS); }
-        else if(data.reason==='closed'){ showMsg('warn','Voting not open yet.',ERROR_MS); }
+        else if(data.reason==='window closed'){ showMsg('warn','Voting not open yet.',ERROR_MS); }
         else{ showMsg('warn', data.reason||'Vote not accepted.', ERROR_MS); }
       }catch{
         showMsg('warn','Network error',ERROR_MS);

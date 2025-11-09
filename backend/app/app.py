@@ -43,7 +43,12 @@ def create_session() -> str:
         code = gen_code()
     pipe = r.pipeline()
     pipe.hset(K_votes(code), mapping={"not_confused": 0, "soso": 0, "confused": 0})
-    pipe.hset(K_meta(code),  mapping={"locked": 0, "participants": 0, "window_active": 0, "window_expires_at": 0})
+    pipe.hset(K_meta(code),  mapping={"locked": 0, 
+                                      "participants": 0, 
+                                      "window_active": 0, 
+                                      "window_expires_at": 0,
+                                      "window_id":0
+                                      })
     pipe.execute()
     return code
 
@@ -59,6 +64,7 @@ def inc_participants(code):
 def start_window(code, seconds=60):
     expires = int(time()) + int(seconds)
     pipe = r.pipeline()
+    pipe.hincrby(K_meta(code), "window_id", 1) 
     pipe.hset(K_votes(code), mapping={"not_confused": 0, "soso": 0, "confused": 0})
     pipe.hset(K_meta(code),  mapping={"window_active": 1, "window_expires_at": expires})
     pipe.delete(K_voted(code))   # clear who already voted
@@ -106,6 +112,7 @@ def read_stats(code):
         "locked":       meta.get("locked") == "1",
         "window_active": active,
         "window_seconds_remaining": remaining,
+        "window_id":    int(meta.get("window_id", 0))
     }
 # ----------- PAGES -------------------- #
 @app.route("/")
