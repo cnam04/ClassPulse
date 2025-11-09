@@ -7,40 +7,47 @@
 <style>
   :root{--fg:#111;--muted:#6b7280;--border:#e5e7eb;--card:#fff}
   *{box-sizing:border-box}
-  body{margin:0;font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif;color:var(--fg);background:#fafafa;display:grid;place-items:center;min-height:100vh;padding:16px}
-  .wrap{width:min(860px,94vw);text-align:center}
+  body{margin:0;font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif;color:var(--fg);background:#fafafa;min-height:100vh}
+  .wrap{width:min(860px,94vw);margin:0 auto;padding:16px 16px 90px;text-align:center}
   .title{font-size:clamp(26px,4.5vw,44px);font-weight:800;margin:6px 0}
   .code{display:inline-block;margin-top:6px;font-size:clamp(16px,3vw,24px);background:#111;color:#fff;padding:6px 12px;border-radius:999px;letter-spacing:.12em}
   .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px;margin-top:16px}
   .subtitle{color:var(--muted);font-size:clamp(15px,2vw,20px);margin:0 0 10px}
-  .pill{display:inline-block;margin-bottom:12px;padding:6px 12px;border:1px solid var(--border);border-radius:999px;color:var(--muted);font-weight:600}
+  .pill{display:inline-block;margin-bottom:12px;padding:6px 12px;border:1px solid var(--border);border-radius:999px;color:var(--muted);font-weight:700}
   .hint{margin:10px 0 6px;color:var(--muted);font-weight:700}
   .row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
   button.vote{appearance:none;border:1px solid var(--border);border-radius:12px;padding:16px 10px;font-size:16px;font-weight:700;background:#f3f4f6;cursor:pointer}
   .count{font-size:28px;font-weight:800;display:block;margin-bottom:6px;opacity:.85}
-  .red{background:#fee2e2;border-color:#ef4444}.yellow{background:#fef3c7;border-color:#d97706}.green{background:#dcfce7;border-color:#16a34a}
+  .red{background:#fee2e2;border-color:#ef4444}
+  .yellow{background:#fef3c7;border-color:#d97706}
+  .green{background:#dcfce7;border-color:#16a34a}
   #msg{margin-top:12px;min-height:1.2em;font-weight:600}
-  .ok{color:#16a34a}.warn{color:#b91c1c}
+  .ok{color:#16a34a}
+  .warn{color:#b91c1c}
   [hidden]{display:none!important}
-
-  /* Question card */
+  /* Broadcast question */
   .qwrap{ margin-top:14px; text-align:left; }
-  .qcard{
-    border:1px solid var(--border); border-radius:12px; padding:14px; background:#fff;
+  .qcard{ border:1px solid var(--border); border-radius:12px; padding:14px; background:#fff }
+  .qtitle{ font-weight:800; margin:0 0 6px; color:#111 }
+  .qtext{ white-space:pre-wrap; color:#374151 }
+  /* NEW: Student ask FAB */
+  .fab{
+    position:fixed; right:16px; bottom:16px;
+    display:inline-flex; align-items:center; gap:10px;
+    border:1px solid var(--border); background:#111; color:#fff;
+    border-radius:999px; padding:12px 16px; font-weight:800; cursor:pointer;
+    box-shadow:0 10px 30px rgba(0,0,0,.12);
   }
-  .qtitle{ font-weight:800; margin:0 0 6px; color:#111; }
-  .qtext{ white-space:pre-wrap; color:#374151; }
+  .fab svg{ width:20px; height:20px; }
 </style>
 </head>
 <body>
-  <div class="wrap">
+  <div class="wrap" id="state" data-code="{{ code }}">
     <div class="title">Session code:</div>
-    <div class="code">{{ code }}</div>
+    <div class="code" id="scode">{{ code }}</div>
 
     <div class="card" role="region" aria-labelledby="how-feel">
-      <div id="how-feel" class="subtitle">How do you feel?</div>
-
-      <!-- Teacher question (appears only if present) -->
+      <!-- Broadcast question from teacher -->
       <div id="qwrap" class="qwrap" hidden>
         <div class="qcard">
           <div class="qtitle">Question from your teacher</div>
@@ -48,13 +55,14 @@
         </div>
       </div>
 
-      <!-- BEFORE the vote window opens -->
+      <!-- Before window -->
       <div id="pre" class="hint">Please wait until your teacher calls the vote.</div>
 
-      <!-- ONLY visible WHILE the window is open -->
+      <!-- While window open -->
       <div id="win" class="pill" hidden>Window: checking…</div>
+      <div id="how-feel" class="subtitle" hidden>How do you feel?</div>
 
-      <!-- Buttons appear only when vote window is open -->
+      <!-- Buttons (window open only) -->
       <div id="controls" class="row" hidden>
         <button class="vote red"    data-v="confused"><span class="count">😕</span>Confused</button>
         <button class="vote yellow" data-v="soso"><span class="count">😐</span>So-so</button>
@@ -65,33 +73,56 @@
     </div>
   </div>
 
+  <!-- NEW: floating ask button (only visible when allowed) -->
+  <button id="fab" class="fab" hidden>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+      <path stroke-width="2" d="M9 9h.01M15 9h.01M8 13a4 4 0 0 0 8 0" />
+      <circle cx="12" cy="12" r="9" stroke-width="2"/>
+    </svg>
+    Ask a question
+  </button>
+
 <script>
-  const code="{{ code }}";
+  // Session code
+  function getSessionCode(){
+    const root = document.getElementById('state');
+    const fromAttr = root?.dataset.code || '';
+    const fromTpl  = document.getElementById('scode')?.textContent || '';
+    const fromQS   = new URLSearchParams(location.search).get('code') || '';
+    return (fromAttr || fromTpl || fromQS || '').trim();
+  }
+  const code = getSessionCode();
+
+  // Elements
   const msg=document.getElementById('msg');
   const pre=document.getElementById('pre');
   const win=document.getElementById('win');
+  const howFeel=document.getElementById('how-feel');
   const controls=document.getElementById('controls');
   const buttons=[...controls.querySelectorAll('button.vote[data-v]')];
   const qwrap=document.getElementById('qwrap');
   const qtext=document.getElementById('qtext');
+  const fab=document.getElementById('fab');
 
   const ERROR_MS=2000, OK_MS=3000;
 
-  const showMsg=(kind,text,ms=0)=>{
+  function showMsg(kind,text,ms=0){
     clearTimeout(showMsg._t);
     msg.className=kind||''; msg.textContent=text||'';
     if(ms>0) showMsg._t=setTimeout(()=>{ msg.className=''; msg.textContent=''; }, ms);
-  };
+  }
 
-  // voter id + per-session voted flag
-  const getVoterId=()=>{
+  // Stable voter id + per-session voted flag
+  function getVoterId(){
     let id=localStorage.getItem('voter_id');
     if(!id){
-      id=([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g,c=>(c^crypto.getRandomValues(new Uint8Array(1))[0]&15>>c/4).toString(16));
+      id=([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g,c=>
+        (c^crypto.getRandomValues(new Uint8Array(1))[0]&15>>c/4).toString(16)
+      );
       localStorage.setItem('voter_id',id);
     }
     return id;
-  };
+  }
   const voterId=getVoterId();
   const votedKey=`voted_${code}`;
   const hasVoted=()=>localStorage.getItem(votedKey)==='1';
@@ -103,21 +134,24 @@
     if(windowOpen){
       pre.hidden = true;
       win.hidden = false;
+      howFeel.hidden = false;
       controls.hidden = false;
       const disable = hasVoted();
       buttons.forEach(b=>b.disabled = disable);
     }else{
       pre.hidden = false;
       win.hidden = true;
+      howFeel.hidden = true;
       controls.hidden = true;
-      // don't clear question: teacher might leave question up between windows
-      msg.textContent = ''; msg.className = '';
+      msg.className = '';
+      msg.textContent = '';
     }
   }
 
+  // Stats poll
   async function fetchStats(){
     try{
-      const res=await fetch(`/api/session/${code}/stats`);
+      const res=await fetch(`/api/session/${encodeURIComponent(code)}/stats`, { headers:{'Accept':'application/json'} });
       if(!res.ok) throw 0;
       const d=await res.json();
       windowOpen = !!d.window_active;
@@ -127,29 +161,32 @@
     }catch{}
   }
 
-  // NEW: question polling
+  // Broadcast teacher question poll
   async function fetchQuestion(){
     try{
-      const res=await fetch(`/api/session/${code}/question`);
-      if(!res.ok) throw 0;
-      const d=await res.json();                 // expects: { text: "..." } or { text: "" }
-      const t=(d?.text || '').trim();
-      if(t){
-        qtext.textContent = t;
-        qwrap.hidden = false;
-      }else{
-        qwrap.hidden = true;
-        qtext.textContent = '';
-      }
-    }catch{
-      /* ignore */
-    }
+      const res=await fetch(`/api/session/${encodeURIComponent(code)}/question`, { headers:{'Accept':'application/json'} });
+      if(!res.ok){ qwrap.hidden=true; qtext.textContent=''; return; }
+      const d=await res.json();
+      const t = (d?.text ?? d?.question ?? d?.data?.text ?? '').toString().trim();
+      if(t){ qtext.textContent=t; qwrap.hidden=false; }
+      else { qwrap.hidden=true; qtext.textContent=''; }
+    }catch{}
   }
 
+  // NEW: permission poll for showing the ask button
+  async function fetchAskPermission(){
+    try{
+      const res=await fetch(`/api/session/${encodeURIComponent(code)}/qperm`, { headers:{'Accept':'application/json'} });
+      if(!res.ok){ fab.hidden = true; return; }
+      const d=await res.json();
+      fab.hidden = !Boolean(d?.allow);
+    }catch{ fab.hidden = true; }
+  }
+
+  // Send vote
   async function sendVote(status){
-    const res=await fetch(`/api/session/${code}/vote`,{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
+    const res=await fetch(`/api/session/${encodeURIComponent(code)}/vote`,{
+      method:'POST', headers:{'Content-Type':'application/json'},
       body:JSON.stringify({status, voter_id:voterId})
     });
     if(!res.ok) return {ok:false, reason:'Network error'};
@@ -176,10 +213,27 @@
     });
   });
 
+  // NEW: student ask flow
+  fab.addEventListener('click', async ()=>{
+    const text = (prompt('Ask your question (anonymous to teacher):') || '').trim();
+    if(!text) return;
+    try{
+      const res=await fetch(`/api/session/${encodeURIComponent(code)}/student_question`,{
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ text, voter_id: voterId })
+      });
+      if(res.ok){ showMsg('ok','Question sent!', OK_MS); }
+      else{ showMsg('warn','Could not send question.', ERROR_MS); }
+    }catch{
+      showMsg('warn','Network error.', ERROR_MS);
+    }
+  });
+
   // start polling
-  fetchStats(); fetchQuestion();
+  fetchStats(); fetchQuestion(); fetchAskPermission();
   setInterval(fetchStats, 1000);
   setInterval(fetchQuestion, 1000);
+  setInterval(fetchAskPermission, 1000);
 </script>
 </body>
 </html>
