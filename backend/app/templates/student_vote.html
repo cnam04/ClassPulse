@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<title>Vote</title>
+<title>Student — ClassPulse</title>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <style>
   :root{--fg:#111;--muted:#6b7280;--border:#e5e7eb;--card:#fff}
@@ -22,15 +22,14 @@
   .yellow{background:#fef3c7;border-color:#d97706}
   .green{background:#dcfce7;border-color:#16a34a}
   #msg{margin-top:12px;min-height:1.2em;font-weight:600}
-  .ok{color:#16a34a}
-  .warn{color:#b91c1c}
+  .ok{color:#16a34a}.warn{color:#b91c1c}
   [hidden]{display:none!important}
   /* Broadcast question */
   .qwrap{ margin-top:14px; text-align:left; }
   .qcard{ border:1px solid var(--border); border-radius:12px; padding:14px; background:#fff }
   .qtitle{ font-weight:800; margin:0 0 6px; color:#111 }
   .qtext{ white-space:pre-wrap; color:#374151 }
-  /* NEW: Student ask FAB */
+  /* Student ask FAB */
   .fab{
     position:fixed; right:16px; bottom:16px;
     display:inline-flex; align-items:center; gap:10px;
@@ -39,6 +38,12 @@
     box-shadow:0 10px 30px rgba(0,0,0,.12);
   }
   .fab svg{ width:20px; height:20px; }
+
+  /* Poll (yes/no) */
+  .poll{ margin-top:14px }
+  .poll .box{ background:#fff;border:1px solid var(--border);border-radius:14px;padding:14px }
+  .poll .row2{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px }
+  .poll button{ appearance:none;border:1px solid var(--border);border-radius:12px;padding:16px 10px;font-size:16px;font-weight:800;background:#f3f4f6;cursor:pointer }
 </style>
 </head>
 <body>
@@ -69,11 +74,23 @@
         <button class="vote green"  data-v="not_confused"><span class="count">🙂</span>Not confused</button>
       </div>
 
+      <!-- Live poll (appears only when teacher starts one) -->
+      <div id="poll" class="poll" hidden>
+        <div class="box">
+          <div id="pollTitle" class="subtitle" style="margin:0 0 8px">Quick poll</div>
+          <div class="row2">
+            <button id="btnYes">👍 Yes</button>
+            <button id="btnNo">👎 No</button>
+          </div>
+          <div id="pollMsg" class="hint" style="margin-top:8px"></div>
+        </div>
+      </div>
+
       <div id="msg" aria-live="polite"></div>
     </div>
   </div>
 
-  <!-- NEW: floating ask button (only visible when allowed) -->
+  <!-- floating ask button (only visible when allowed) -->
   <button id="fab" class="fab" hidden>
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
       <path stroke-width="2" d="M9 9h.01M15 9h.01M8 13a4 4 0 0 0 8 0" />
@@ -103,6 +120,12 @@
   const qwrap=document.getElementById('qwrap');
   const qtext=document.getElementById('qtext');
   const fab=document.getElementById('fab');
+  // poll
+  const pollBox=document.getElementById('poll');
+  const pollTitle=document.getElementById('pollTitle');
+  const pollMsg=document.getElementById('pollMsg');
+  const btnYes=document.getElementById('btnYes');
+  const btnNo=document.getElementById('btnNo');
 
   const ERROR_MS=2000, OK_MS=3000;
 
@@ -112,7 +135,7 @@
     if(ms>0) showMsg._t=setTimeout(()=>{ msg.className=''; msg.textContent=''; }, ms);
   }
 
-  // Stable voter id + per-session voted flag
+  // Stable voter id + per-session flags
   function getVoterId(){
     let id=localStorage.getItem('voter_id');
     if(!id){
@@ -125,12 +148,15 @@
   }
   const voterId=getVoterId();
   const votedKey=`voted_${code}`;
+  const polledKey=`polled_${code}`;
   const hasVoted=()=>localStorage.getItem(votedKey)==='1';
   const markVoted=()=>localStorage.setItem(votedKey,'1');
+  const hasPolled=()=>localStorage.getItem(polledKey)==='1';
+  const markPolled=()=>localStorage.setItem(polledKey,'1');
 
   let windowOpen=false;
 
-  function updateUI(){
+  function updateVoteUI(){
     if(windowOpen){
       pre.hidden = true;
       win.hidden = false;
@@ -148,7 +174,7 @@
     }
   }
 
-  // Stats poll
+  // Stats poll (vote window)
   async function fetchStats(){
     try{
       const res=await fetch(`/api/session/${encodeURIComponent(code)}/stats`, { headers:{'Accept':'application/json'} });
@@ -157,7 +183,7 @@
       windowOpen = !!d.window_active;
       const remain=d.window_seconds_remaining ?? 0;
       if(windowOpen) win.textContent=`Window: ${remain}s left`;
-      updateUI();
+      updateVoteUI();
     }catch{}
   }
 
@@ -173,7 +199,7 @@
     }catch{}
   }
 
-  // NEW: permission poll for showing the ask button
+  // Permission poll for showing the ask button
   async function fetchAskPermission(){
     try{
       const res=await fetch(`/api/session/${encodeURIComponent(code)}/qperm`, { headers:{'Accept':'application/json'} });
@@ -183,7 +209,7 @@
     }catch{ fab.hidden = true; }
   }
 
-  // Send vote
+  // Send vote (confusion)
   async function sendVote(status){
     const res=await fetch(`/api/session/${encodeURIComponent(code)}/vote`,{
       method:'POST', headers:{'Content-Type':'application/json'},
@@ -208,12 +234,12 @@
       }catch{
         showMsg('warn','Network error',ERROR_MS);
       }finally{
-        updateUI();
+        updateVoteUI();
       }
     });
   });
 
-  // NEW: student ask flow
+  // Student ask flow
   fab.addEventListener('click', async ()=>{
     const text = (prompt('Ask your question (anonymous to teacher):') || '').trim();
     if(!text) return;
@@ -229,11 +255,41 @@
     }
   });
 
+  // POLL — show/hide and vote
+  async function fetchPoll(){
+    try{
+      const r = await fetch(`/api/session/${encodeURIComponent(code)}/poll`, { headers:{'Accept':'application/json'} });
+      if(!r.ok){ pollBox.hidden = true; return; }
+      const p = await r.json();
+      const active = !!p?.active;
+      pollBox.hidden = !active;
+      if(active){
+        pollTitle.textContent = p?.question ? p.question : 'Quick poll';
+        const done = hasPolled();
+        btnYes.disabled = done; btnNo.disabled = done;
+        pollMsg.textContent = done ? 'Thanks—your vote was recorded.' : '';
+      }
+    }catch{ pollBox.hidden = true; }
+  }
+  async function sendPollVote(choice){
+    try{
+      const r = await fetch(`/api/session/${encodeURIComponent(code)}/poll/vote`,{
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ choice, voter_id: voterId })
+      });
+      if(r.ok){ markPolled(); btnYes.disabled = btnNo.disabled = true; pollMsg.textContent='Thanks—your vote was recorded.'; }
+      else{ pollMsg.textContent='Could not send vote.'; }
+    }catch{ pollMsg.textContent='Network error.'; }
+  }
+  btnYes.addEventListener('click', ()=> sendPollVote('yes'));
+  btnNo .addEventListener('click', ()=> sendPollVote('no'));
+
   // start polling
-  fetchStats(); fetchQuestion(); fetchAskPermission();
+  fetchStats(); fetchQuestion(); fetchAskPermission(); fetchPoll();
   setInterval(fetchStats, 1000);
   setInterval(fetchQuestion, 1000);
   setInterval(fetchAskPermission, 1000);
+  setInterval(fetchPoll, 800); // a tad faster for poll UX
 </script>
 </body>
 </html>
