@@ -70,14 +70,34 @@
         <div class="code">{{ code }}</div>
       </div>
 
-      <div class="joined a-code">Joined: <strong id="pcount">{{ participants }}</strong></div>
+        <div class="joined a-code">
+        Joined: <span id="participants">{{ participants }}</span>
+        <span id="locked"
+            {% if locked %}style="display: inline"{% else %}style="display: none"{% endif %}>
+            (locked)
+        </span>
+        </div>
 
-      <div class="actions a-join">
+        <div class="actions a-join">
         <form method="post" action="/teacher/{{ code }}/lock">
-          <button type="submit">Start Session</button>
+            <button type="submit">Start Session</button>
         </form>
-      </div>
+        </div>
     </section>
   </main>
+  <script>
+    const code = "{{ code }}";
+    async function refreshStats() {
+    try {
+        const res = await fetch(`/api/session/${code}/stats`, { cache: "no-store" });
+        if (!res.ok) return;
+        const s = await res.json();
+        document.getElementById("participants").textContent = s.participants;
+        document.getElementById("locked").style.display = s.locked ? "inline" : "none";
+    } catch {}
+    }
+    refreshStats();                    // initial
+    setInterval(refreshStats, 1500);   // every 1.5s
+  </script>
 </body>
 </html>

@@ -183,7 +183,9 @@ def api_start_window(code):
 def api_stats(code):
     if not session_exists(code):
         return jsonify({"error": "session not found"}), 404
-    return jsonify(read_stats(code))
+    resp=jsonify(read_stats(code))
+    resp.headers["Cache-Control"]="no-store"
+    return resp
 
 
 
