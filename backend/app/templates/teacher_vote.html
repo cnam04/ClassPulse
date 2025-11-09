@@ -67,6 +67,28 @@
     .btn-lite{
       background:#fff; color:#111; border:1px solid var(--border); border-radius:10px; padding:8px 10px; font-weight:700; cursor:pointer;
     }
+
+    /* === NEW: Simple bar chart === */
+    .chart{
+      margin-top:14px; border:1px solid var(--border); border-radius:14px; background:#fff; padding:14px;
+    }
+    .chart h2{ margin:0 0 8px; font-size:1.05rem }
+    .bars{
+      display:grid; grid-template-columns: repeat(3, 1fr); gap:14px; align-items:end; height:180px; padding:6px 4px 0;
+    }
+    .bar{
+      position:relative; border-radius:10px 10px 6px 6px; min-height:4px;
+      display:flex; align-items:flex-end; justify-content:center; transition:height .25s ease;
+    }
+    .bar .val{
+      position:absolute; top:-22px; font-weight:800; font-size:14px; color:#111;
+    }
+    .bar.red{    background:var(--red);    border:1px solid var(--red); }
+    .bar.yellow{ background:var(--yellow); border:1px solid var(--yellow); }
+    .bar.green{  background:var(--green);  border:1px solid var(--green); }
+    .xlabel{
+      text-align:center; margin-top:6px; font-weight:700; color:#555; font-size:14px;
+    }
   </style>
 </head>
 <body>
@@ -79,7 +101,7 @@
           <button type="submit">Call 60-second Vote</button>
         </form>
 
-        <!-- Teacher asks broadcast question (existing) -->
+        <!-- Teacher asks broadcast question -->
         <div class="panel" aria-labelledby="qlab">
           <h2 id="qlab">Ask a question to all students</h2>
           <div class="row2">
@@ -91,7 +113,7 @@
           </div>
         </div>
 
-        <!-- NEW: Allow student questions -->
+        <!-- Student Questions -->
         <div class="panel">
           <h2>Student Questions</h2>
           <label class="switch">
@@ -100,6 +122,21 @@
           </label>
           <div class="qcount" id="qcount">No questions yet</div>
           <div class="qlist" id="qlist"></div>
+        </div>
+
+        <!-- === NEW: Live Bar Chart === -->
+        <div class="chart" aria-labelledby="chart-title">
+          <h2 id="chart-title">Live Vote Results</h2>
+          <div class="bars">
+            <div class="bar red"    id="bar-cf" style="height:4px"><span class="val" id="val-cf">0</span></div>
+            <div class="bar yellow" id="bar-ss" style="height:4px"><span class="val" id="val-ss">0</span></div>
+            <div class="bar green"  id="bar-nc" style="height:4px"><span class="val" id="val-nc">0</span></div>
+          </div>
+          <div class="grid" style="grid-template-columns: repeat(3, 1fr); gap:14px; margin-top:2px">
+            <div class="xlabel">Confused</div>
+            <div class="xlabel">So-so</div>
+            <div class="xlabel">Not Confused</div>
+          </div>
         </div>
       </div>
 
@@ -147,6 +184,13 @@
       allow:  document.getElementById('allow'),
       qcount: document.getElementById('qcount'),
       qlist:  document.getElementById('qlist'),
+      // chart bits
+      barCF:  document.getElementById('bar-cf'),
+      barSS:  document.getElementById('bar-ss'),
+      barNC:  document.getElementById('bar-nc'),
+      valCF:  document.getElementById('val-cf'),
+      valSS:  document.getElementById('val-ss'),
+      valNC:  document.getElementById('val-nc'),
     };
 
     // Vote window
@@ -176,7 +220,7 @@
       }catch(_){}
     });
 
-    // NEW: Allow student questions toggle
+    // Allow student questions toggle
     async function setAllow(val){
       try{
         await fetch(`/api/session/${encodeURIComponent(code)}/qperm`,{
@@ -199,7 +243,7 @@
       try{
         const r2 = await fetch(`/api/session/${encodeURIComponent(code)}/student_questions`, { headers:{'Accept':'application/json'} });
         if(!r2.ok) return;
-        const arr = await r2.json(); // expect [{id, text, ts, voter_id?}, ...]
+        const arr = await r2.json();
         els.qcount.textContent = (arr && arr.length) ? `${arr.length} question${arr.length>1?'s':''}` : 'No questions yet';
         renderQuestions(arr||[]);
       }catch(_){}
@@ -219,7 +263,6 @@
             <button class="btn-lite" data-a="broadcast">Broadcast</button>
             <button class="btn-lite" data-a="remove">Remove</button>
           </div>`;
-        // actions
         div.querySelector('[data-a="broadcast"]').addEventListener('click', async ()=>{
           try{
             await fetch(`/api/session/${encodeURIComponent(code)}/question`,{
@@ -238,12 +281,33 @@
       });
     }
 
+    // === NEW: render bar chart ===
+    function renderChart(cConfused, cSoso, cNC){
+      const a = Number(cConfused||0);
+      const b = Number(cSoso||0);
+      const c = Number(cNC||0);
+      const max = Math.max(1, a, b, c);      // avoid /0; also keeps a tiny baseline
+      const H = 160;                          // px max height inside 180px area (some headroom)
+
+      els.valCF.textContent = a;
+      els.valSS.textContent = b;
+      els.valNC.textContent = c;
+
+      // map counts to heights; ensure small nonzero shows a visible bar (min 4px if >0)
+      const h = (v)=> v===0 ? 4 : Math.max(8, Math.round((v/max)*H));
+
+      els.barCF.style.height = h(a) + 'px';
+      els.barSS.style.height = h(b) + 'px';
+      els.barNC.style.height = h(c) + 'px';
+    }
+
     // Stats polling
     async function tickStats(){
       try{
         const res = await fetch(`/api/session/${encodeURIComponent(code)}/stats`, { headers:{'Accept':'application/json'} });
         if(!res.ok) return;
         const d = await res.json();
+        // update counters
         els.pcount.textContent = d.participants ?? 0;
         els.nc.textContent = d.not_confused ?? 0;
         els.ss.textContent = d.soso ?? 0;
@@ -251,6 +315,9 @@
         const open   = !!d.window_active;
         const remain = d.window_seconds_remaining ?? 0;
         els.timer.textContent = open ? `Window: ${remain}s left` : 'Window: closed';
+
+        // update chart
+        renderChart(d.confused ?? 0, d.soso ?? 0, d.not_confused ?? 0);
       }catch(_){}
     }
 
