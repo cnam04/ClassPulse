@@ -1,0 +1,81 @@
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+@keyframes floatFade {
+  0%   { opacity: 0; transform: translateY(12px) scale(.98); }
+  60%  { opacity: 1; transform: translateY(0)   scale(1); }
+  100% { opacity: 1; transform: translateY(0)   scale(1); }
+}
+
+.welcome {
+  opacity: 0;
+  animation: floatFade .8s cubic-bezier(.22,.61,.36,1) .05s both;
+  will-change: transform, opacity;
+}
+
+.card-enter {
+  opacity: 0;
+  animation: floatFade .8s cubic-bezier(.22,.61,.36,1) .18s both;
+}
+
+/* Optional: a subtle underline that grows in */
+.welcome::after {
+  content: "";
+  display: block;
+  height: 3px;
+  width: 0;
+  margin: 6px auto 0;
+  background: #111;
+  border-radius: 2px;
+  animation: growBar .7s ease .35s both;
+}
+@keyframes growBar { from { width: 0; } to { width: 42px; } }
+
+/* Respect reduced-motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .welcome, .card-enter, .welcome::after { animation: none !important; opacity: 1; }
+}
+
+
+body {
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-family: Arial, sans-serif;
+    background: url(nature.jpg);
+}
+
+.container {
+    text-align: center;
+}
+
+h1 {
+    font-size: 2.5rem;
+    margin-bottom: 2rem;
+    color: white;
+}
+
+.buttons {
+    display: flex;
+    gap: 2rem;
+}
+
+.role-btn {
+    padding: 1rem 3rem;
+    font-size: 1.5rem;
+    border: none;
+    border-radius: 8px;
+    background-color: #007bff;
+    color: white;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.role-btn:hover {
+    background-color: #0056b3;
+}
