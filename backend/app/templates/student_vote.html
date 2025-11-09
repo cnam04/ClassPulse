@@ -27,27 +27,40 @@
   <script>
     const code = "{{ code }}";
     const msg = document.getElementById('msg');
+
+    function getVoterId(){
+        let id = localStorage.getItem('voter_id');
+        if(!id){
+            id = ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g,c=>
+                (c^crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+            );
+            localStorage.setItem('voter_id',id);
+        }
+        return id;
+    }
+    const voterId = getVoterId();
     for (const btn of document.querySelectorAll('button[data-v]')) {
       btn.addEventListener('click', async () => {
         const status = btn.getAttribute('data-v');
         const res = await fetch(`/api/session/${code}/vote`, {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({ status })
+          body: JSON.stringify({ status, voter_id: voterId })
         });
+        let txt = 'Error sending vote. Vote already recorded', cls = 'warn';
         if (res.ok) {
           const data = await res.json();
           if (data.ok) {
-            msg.className = 'ok';
-            msg.textContent = 'Vote recorded. Thanks!';
-          } else {
-            msg.className = 'warn';
-            msg.textContent = data.reason || 'Vote not accepted.';
+            txt = 'Vote recorded. Thanks!'; cls = 'ok';
+            
+          } else if (data.reason === 'already voted'){
+            txt = 'Voting window is closed.';cls='warn';
+          } else{
+            txt = data.reason || 'Vote not accepted.';cls='warn';
           }
-        } else {
-          msg.className = 'warn';
-          msg.textContent = 'Error sending vote.';
-        }
+        } 
+        msg.className = cls;
+        msg.textContent = txt;   
       });
     }
   </script>

@@ -35,6 +35,7 @@ def create_session():
             "votes": empty_counts(), 
             "window_active": False,
             "window_expires_at": 0.0,
+            "voted": set()
         }
         return code
 
@@ -128,6 +129,7 @@ def api_start_window(code):
         s["votes"] = empty_counts()  # fresh question segment
         s["window_active"] = True
         s["window_expires_at"] = time() + 60.0
+        s["voted"].clear()
     return jsonify({"ok": True, "seconds": 60})
 
 
@@ -160,15 +162,19 @@ def api_vote(code):
 
     payload = request.get_json(silent=True) or {}
     status = (payload.get("status") or "").lower().replace("-", "_")
+    voter_id = payload.get("voter_id")
 
     if status not in ALLOWED_STATUSES:
         return jsonify({"error": f"status must be one of {sorted(ALLOWED_STATUSES)}"}), 400
-
+    if not voter_id:
+        return jsonify({"error": "missing voter_id"}), 400
     with lock:
         if s["window_active"] and time() > s["window_expires_at"]:
             s["window_active"] = False
             return jsonify({"ok": False, "reason": "window closed"}), 403
-
+        if voter_id in s["voted"]:
+            return jsonify({"ok":False, "reason":"already voted"}),409
+        s["voted"].add(voter_id)
         s["votes"][status] += 1
 
     return jsonify({"ok": True})
