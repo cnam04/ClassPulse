@@ -38,4 +38,5 @@ python -m venv .venv
 source .venv/bin/activate        # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 
+(Note: you will have to inject your own redis url for this to work)
 python -m gunicorn ClassPulse.app:app
