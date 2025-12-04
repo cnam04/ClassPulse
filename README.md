@@ -26,17 +26,27 @@ Quick classroom pulse-check tool built at a hackathon. Teachers create a session
 ### Requirements
 - Python 3.11+  
 - Redis (local or cloud)  
-- Environment variable:
-  ```bash
-  export REDIS_URL=redis://localhost:6379/0
+Install them via:
+
+- Python: <https://www.python.org/downloads/>  
+- Redis (all OSes): <https://redis.io/docs/latest/operate/oss_and_stack/install/install-redis/>
+
+> If you don’t set `REDIS_URL`, the dev scripts default to `redis://localhost:6379/0` and expect a local Redis server.
+
 ### Setup
-git clone <repo-url>
-cd <repo-folder>
-git checkout final
+- Run these commands: 
+  ```bash
+  git clone <repo-url>
+  cd <repo-folder>
+  git checkout final
+  ```
+- If you're using *Windows*, run:
+  ```bash
+  dev.bat
+  ```
+- If you're using *Mac*, run:
+  ```bat
+  ./dev.sh
+  ```
+  
 
-python -m venv .venv
-source .venv/bin/activate        # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
-
-(Note: you will have to inject your own redis url for this to work)
-python -m gunicorn ClassPulse.app:app

@@ -1,6 +1,7 @@
 import os,redis
 
 # ------- Session Storage -------- #
+REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 r = redis.from_url(os.environ["REDIS_URL"], decode_responses=True)
 
 # ------ Voting Keys--------- #
