@@ -6,7 +6,7 @@ ALLOWED_STATUSES = {"not_confused", "confused", "soso"}
 
 voting_bp = Blueprint("voting_api", __name__, url_prefix= "/api")
 
-@voting_bp.post("/api/session/<code>/start_window")
+@voting_bp.post("/session/<code>/start_window")
 def api_start_window(code):
     if not session_exists(code):
         return jsonify({"error": "session not found"}), 404
@@ -14,7 +14,7 @@ def api_start_window(code):
     return jsonify({"ok": True, "seconds": 60})
 
 
-@voting_bp.get("/api/session/<code>/stats")
+@voting_bp.get("/session/<code>/stats")
 def api_stats(code):
     if not session_exists(code):
         return jsonify({"error": "session not found"}), 404
@@ -22,7 +22,7 @@ def api_stats(code):
     resp.headers["Cache-Control"]="no-store"
     return resp
 
-@voting_bp.post("/api/session/<code>/vote")
+@voting_bp.post("/session/<code>/vote")
 def api_vote(code):
     if not session_exists(code):
         return jsonify({"error": "session not found"}), 404

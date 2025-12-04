@@ -5,7 +5,7 @@ from ..services.questions import get_qperm, set_qperm, add_student_question, lis
 
 questions_bp = Blueprint("questions_api", __name__, url_prefix= "/api")
 
-@questions_bp.get("/api/session/<code>/question")
+@questions_bp.get("/session/<code>/question")
 def api_get_broadcast(code):
     if not session_exists(code):
         return jsonify({"error": "session not found"}), 404
@@ -13,7 +13,7 @@ def api_get_broadcast(code):
     qid  = r.get(K_broadcast_qid(code)) or ""
     return jsonify({"text": text, "qid": int(qid) if qid.isdigit() else None})
 
-@questions_bp.post("/api/session/<code>/question")
+@questions_bp.post("/session/<code>/question")
 def api_set_broadcast(code):
     if not session_exists(code):
         return jsonify({"error": "session not found"}), 404
@@ -32,13 +32,13 @@ def api_set_broadcast(code):
     pipe.execute()
     return jsonify({"ok": True})
 
-@questions_bp.get("/api/session/<code>/qperm")
+@questions_bp.get("/session/<code>/qperm")
 def api_qperm_get(code):
     if not session_exists(code):
         return jsonify({"error": "session not found"}), 404
     return jsonify({"allow": get_qperm(code)})
 
-@questions_bp.post("/api/session/<code>/qperm")
+@questions_bp.post("/session/<code>/qperm")
 def api_qperm_set(code):
     if not session_exists(code):
         return jsonify({"error": "session not found"}), 404
@@ -48,7 +48,7 @@ def api_qperm_set(code):
     return jsonify({"ok": True, "allow": allow})
 
 
-@questions_bp.post("/api/session/<code>/student_question")
+@questions_bp.post("/session/<code>/student_question")
 def api_student_question(code):
     if not session_exists(code):
         return jsonify({"error": "session not found"}), 404
@@ -68,13 +68,13 @@ def api_student_question(code):
     return jsonify({"ok": True, "id": q["id"], "ts": q["ts"]})
 
 
-@questions_bp.get("/api/session/<code>/student_questions")
+@questions_bp.get("/session/<code>/student_questions")
 def api_student_questions_list(code):
     if not session_exists(code):
         return jsonify({"error": "session not found"}), 404
     return jsonify(list_student_questions(code))
 
-@questions_bp.delete("/api/session/<code>/student_questions/<int:qid>")
+@questions_bp.delete("/session/<code>/student_questions/<int:qid>")
 def api_student_questions_delete(code, qid):
     if not session_exists(code):
         return jsonify({"error": "session not found"}), 404
