@@ -1,5 +1,5 @@
 from ..models.redis_schema import r, K_voted, K_votes, K_meta
-from services.session import window_state
+from .session import window_state
 
 def record_vote(code, status, voter_id):
     # one vote per window; accept outside of a window if you want—here we enforce only within/while open
