@@ -2,7 +2,7 @@ import os,redis
 
 # ------- Session Storage -------- #
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
-r = redis.from_url(os.environ["REDIS_URL"], decode_responses=True)
+r = redis.from_url(REDIS_URL, decode_responses=True)
 
 # ------ Voting Keys--------- #
 def K_votes(code): return f"session:{code}:votes"    # HASH: {not_confused, soso, confused}
@@ -27,3 +27,4 @@ def K_broadcast_qid(code): return f"session:{code}:broadcast_qid"    # STRING qi
 def session_exists(code: str) -> bool:
     # exists if meta hash is present
     return r.exists(K_meta(code)) == 1
+
